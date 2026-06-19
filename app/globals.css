@@ -1,26 +1,225 @@
 @import "tailwindcss";
 
+/* ── Design Tokens ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #0A0C10;
+  --panel: #15181F;
+  --gold: #D7AD66;
+  --parchment: #F3ECDD;
+  --rust: #B5563C;
+  --mist: #8B93A1;
+
+  --font-fraunces: var(--font-fraunces-var);
+  --font-manrope: var(--font-manrope-var);
+  --font-plex-mono: var(--font-plex-mono-var);
 }
 
+/* ── Tailwind v4 Theme ── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-panel: var(--panel);
+  --color-gold: var(--gold);
+  --color-parchment: var(--parchment);
+  --color-rust: var(--rust);
+  --color-mist: var(--mist);
+
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-fraunces);
+  --font-mono: var(--font-plex-mono);
+
+  --animate-fade-in: fade-in 0.6s ease-out forwards;
+  --animate-slide-up: slide-up 0.6s ease-out forwards;
+  --animate-fade-slide-up: fade-slide-up 0.7s ease-out forwards;
+  --animate-pulse-gold: pulse-gold 2s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(24px); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(215, 173, 102, 0.3); }
+  50% { box-shadow: 0 0 20px 4px rgba(215, 173, 102, 0.15); }
+}
+
+/* ── Base Styles ── */
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--ink);
+  color: var(--parchment);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 3px;
+}
+
+/* ── Focus States ── */
+*:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ── Selection ── */
+::selection {
+  background: rgba(215, 173, 102, 0.3);
+  color: var(--parchment);
+}
+
+/* ── Boarding Pass Card ── */
+.boarding-pass {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--gold);
+  border-radius: 12px;
+  overflow: visible;
+}
+
+.boarding-pass::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 2px dashed rgba(215, 173, 102, 0.4);
+  z-index: 2;
+}
+
+/* Semicircle notches on left and right */
+.boarding-pass .notch-left,
+.boarding-pass .notch-right {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background: var(--ink);
+  border-radius: 50%;
+  z-index: 3;
+}
+
+.boarding-pass .notch-left {
+  left: -9px;
+  border-right: 1px solid var(--gold);
+}
+
+.boarding-pass .notch-right {
+  right: -9px;
+  border-left: 1px solid var(--gold);
+}
+
+/* Barcode strip */
+.boarding-pass .barcode {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 24px;
+  padding: 0 12px;
+}
+
+.boarding-pass .barcode span {
+  display: block;
+  width: 2px;
+  background: var(--gold);
+  opacity: 0.5;
+}
+
+/* ── Gold CTA Button ── */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.01em;
+}
+
+.btn-gold:hover {
+  background: #e4bd78;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(215, 173, 102, 0.25);
+}
+
+.btn-gold:active {
+  transform: translateY(0);
+}
+
+/* ── Ghost Button ── */
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--parchment);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.btn-ghost:hover {
+  color: var(--gold);
+}
+
+/* ── Section Utilities ── */
+.section-padding {
+  padding: 120px 24px;
+}
+
+@media (max-width: 768px) {
+  .section-padding {
+    padding: 80px 16px;
+  }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
 }
