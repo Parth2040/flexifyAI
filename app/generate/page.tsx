@@ -6,6 +6,14 @@ import { useAuthStore } from "@/store/authStore";
 
 type GenerationState = "idle" | "loading" | "result";
 
+const SCENE_BUTTONS = [
+  { label: "Eiffel Tower", icon: "🗼", image: "/generated/result-1.jpg" },
+  { label: "Supercar", icon: "🏎️", image: "/generated/result-2.jpg" },
+  { label: "Private Jet", icon: "✈️", image: "/generated/result-3.jpg" },
+  { label: "Yacht", icon: "🛥️", image: "/generated/result-4.jpg" },
+  { label: "Aesthetic", icon: "✨", image: "/generated/result-5.jpg" },
+];
+
 export default function GeneratePage() {
   const router = useRouter();
   const { isLoggedIn, logout } = useAuthStore();
@@ -16,6 +24,8 @@ export default function GeneratePage() {
   const [prompt, setPrompt] = useState("");
   const [genState, setGenState] = useState<GenerationState>("idle");
   const [progress, setProgress] = useState(0);
+  const [currentResultImage, setCurrentResultImage] = useState(SCENE_BUTTONS[0].image);
+  const [selectedScene, setSelectedScene] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auth Guard
@@ -108,10 +118,20 @@ export default function GeneratePage() {
     router.push("/");
   };
 
+  const handleSceneSelect = (index: number) => {
+    setSelectedScene(selectedScene === index ? null : index);
+  };
+
   const handleGenerate = () => {
-    const finalPrompt = prompt.trim() || "Generate a photo of mine with supercar";
-    if (!prompt.trim()) {
-      setPrompt("Generate a photo of mine with supercar");
+    // Use selected scene button's image, or fall back to first scene
+    if (selectedScene !== null) {
+      setCurrentResultImage(SCENE_BUTTONS[selectedScene].image);
+    } else {
+      // No scene selected — cycle through images via localStorage
+      const storedIndex = parseInt(localStorage.getItem("flexify_gen_index") || "0", 10);
+      const imageIndex = storedIndex % SCENE_BUTTONS.length;
+      setCurrentResultImage(SCENE_BUTTONS[imageIndex].image);
+      localStorage.setItem("flexify_gen_index", String(storedIndex + 1));
     }
 
     setGenState("loading");
@@ -142,6 +162,7 @@ export default function GeneratePage() {
     setGenState("idle");
     setProgress(0);
     setPrompt("");
+    setSelectedScene(null);
     setSelectedFile(null);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -238,7 +259,7 @@ export default function GeneratePage() {
             {/* Static result image */}
             <div className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60 relative group">
               <img
-                src="/generated/result.jpg"
+                src={currentResultImage}
                 alt="Generated result"
                 className="w-full h-auto object-cover"
               />
@@ -254,7 +275,7 @@ export default function GeneratePage() {
                 Generate another
               </button>
               <a
-                href="/generated/result.jpg"
+                href={currentResultImage}
                 download="flexify-generated.jpg"
                 className="flex-1 py-3.5 bg-[#e2a85c] hover:bg-[#d4994f] text-black rounded-2xl font-sans text-sm font-bold transition-all cursor-pointer text-center shadow-[0_4px_20px_rgba(226,168,92,0.25)]"
               >
@@ -278,11 +299,10 @@ export default function GeneratePage() {
               onDragOver={handleDrag}
               onDragLeave={handleDrag}
               onDrop={handleDrop}
-              className={`relative w-full h-[280px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all duration-300 overflow-hidden ${
-                dragActive
+              className={`relative w-full h-[280px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all duration-300 overflow-hidden ${dragActive
                   ? "border-[#e2a85c] bg-[#e2a85c]/5"
                   : "border-[#4a3b2c] bg-[#0c0e11] hover:border-[#856a42] hover:bg-[#121419]/40"
-              }`}
+                }`}
             >
               {previewUrl ? (
                 <div className="absolute inset-0 w-full h-full group z-20">
@@ -361,6 +381,24 @@ export default function GeneratePage() {
                 </svg>
                 Choose reference images
               </a>
+            </div>
+
+            {/* Scene Selection Buttons */}
+            <div className="w-full flex flex-wrap gap-2 mt-5">
+              {SCENE_BUTTONS.map((scene, index) => (
+                <button
+                  key={scene.label}
+                  onClick={() => handleSceneSelect(index)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold font-sans transition-all duration-200 cursor-pointer border ${
+                    selectedScene === index
+                      ? "bg-[#e2a85c]/15 border-[#e2a85c] text-[#e2a85c] shadow-[0_0_16px_rgba(226,168,92,0.2)]"
+                      : "bg-[#0f1115] border-neutral-800 text-neutral-400 hover:border-[#856a42] hover:text-neutral-300 hover:bg-[#131620]"
+                  }`}
+                >
+                  <span>{scene.icon}</span>
+                  <span>{scene.label}</span>
+                </button>
+              ))}
             </div>
 
             {/* Describe Your Scene card */}
