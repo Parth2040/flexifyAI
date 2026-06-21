@@ -15,6 +15,14 @@ const PRESETS = [
   { label: "🏔️ Swiss Alps", prompt: "Standing on a viewpoint in the Swiss Alps with snowy peaks behind, warm winter outfit, photorealistic." },
 ];
 
+const SCENE_BUTTONS = [
+  { label: "Eiffel Tower", icon: "🗼", image: "/generated/result-1.jpg" },
+  { label: "Supercar", icon: "🏎️", image: "/generated/result-2.jpg" },
+  { label: "Private Jet", icon: "✈️", image: "/generated/result-3.jpg" },
+  { label: "Yacht", icon: "🛥️", image: "/generated/result-4.jpg" },
+  { label: "Aesthetic", icon: "✨", image: "/generated/result-5.jpg" },
+];
+
 export default function GeneratePage() {
   const router = useRouter();
   const { isLoggedIn, loading: sessionLoading, logout } = useSession();
@@ -25,8 +33,13 @@ export default function GeneratePage() {
   const [prompt, setPrompt] = useState("");
   const [genState, setGenState] = useState<GenerationState>("idle");
   const [progress, setProgress] = useState(0);
+<<<<<<< HEAD
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+=======
+  const [currentResultImage, setCurrentResultImage] = useState(SCENE_BUTTONS[0].image);
+  const [selectedScene, setSelectedScene] = useState<number | null>(null);
+>>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -105,6 +118,7 @@ export default function GeneratePage() {
     router.push("/");
   };
 
+<<<<<<< HEAD
   const startFakeProgress = () => {
     setProgress(0);
     progressTimer.current = setInterval(() => {
@@ -131,6 +145,22 @@ export default function GeneratePage() {
       setErrorMsg("Describe the scene you want, or pick a preset below.");
       setGenState("error");
       return;
+=======
+  const handleSceneSelect = (index: number) => {
+    setSelectedScene(selectedScene === index ? null : index);
+  };
+
+  const handleGenerate = () => {
+    // Use selected scene button's image, or fall back to first scene
+    if (selectedScene !== null) {
+      setCurrentResultImage(SCENE_BUTTONS[selectedScene].image);
+    } else {
+      // No scene selected — cycle through images via localStorage
+      const storedIndex = parseInt(localStorage.getItem("flexify_gen_index") || "0", 10);
+      const imageIndex = storedIndex % SCENE_BUTTONS.length;
+      setCurrentResultImage(SCENE_BUTTONS[imageIndex].image);
+      localStorage.setItem("flexify_gen_index", String(storedIndex + 1));
+>>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
     }
 
     setErrorMsg("");
@@ -168,6 +198,7 @@ export default function GeneratePage() {
     setGenState("idle");
     setProgress(0);
     setPrompt("");
+    setSelectedScene(null);
     setSelectedFile(null);
     setResultUrl(null);
     setErrorMsg("");
@@ -403,9 +434,85 @@ export default function GeneratePage() {
                   }}
                 />
 
+<<<<<<< HEAD
                 {/* Preset scene chips */}
                 <div className="flex flex-wrap gap-2">
                   {PRESETS.map((preset) => (
+=======
+            {/* Progress bar */}
+            <div className="w-full max-w-xs h-1 bg-neutral-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-200 ease-out"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── RESULT STATE ── */}
+        {genState === "result" && (
+          <div className="w-full flex flex-col items-center gap-5 animate-fadeIn mt-4">
+            <h2 className="text-xl sm:text-2xl font-serif font-semibold text-neutral-200 text-center">
+              Your generated image
+            </h2>
+
+            {/* Static result image */}
+            <div className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60 relative group">
+              <img
+                src={currentResultImage}
+                alt="Generated result"
+                className="w-full h-auto object-cover"
+              />
+              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleNewGeneration}
+                className="flex-1 py-3.5 bg-transparent border border-neutral-800 text-white hover:border-neutral-600 rounded-2xl font-sans text-sm font-medium transition-all cursor-pointer"
+              >
+                Generate another
+              </button>
+              <a
+                href={currentResultImage}
+                download="flexify-generated.jpg"
+                className="flex-1 py-3.5 bg-[#e2a85c] hover:bg-[#d4994f] text-black rounded-2xl font-sans text-sm font-bold transition-all cursor-pointer text-center shadow-[0_4px_20px_rgba(226,168,92,0.25)]"
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* ── IDLE STATE (Upload + Prompt) ── */}
+        {genState === "idle" && (
+          <>
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-6 text-neutral-200">
+              Import your photo
+            </h1>
+
+            {/* Upload Dropzone — matching screenshot 2 style */}
+            <div
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              className={`relative w-full h-[280px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all duration-300 overflow-hidden ${dragActive
+                  ? "border-[#e2a85c] bg-[#e2a85c]/5"
+                  : "border-[#4a3b2c] bg-[#0c0e11] hover:border-[#856a42] hover:bg-[#121419]/40"
+                }`}
+            >
+              {previewUrl ? (
+                <div className="absolute inset-0 w-full h-full group z-20">
+                  <img
+                    src={previewUrl}
+                    alt="Upload preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+>>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
                     <button
                       key={preset.label}
                       type="button"
@@ -417,6 +524,7 @@ export default function GeneratePage() {
                   ))}
                 </div>
 
+<<<<<<< HEAD
                 <div className="flex justify-between items-center mt-2 border-t border-neutral-900/40 pt-3">
                   <span className="text-[11px] font-mono text-neutral-600">
                     {selectedFile ? "Photo ready" : "Upload a photo to start"}
@@ -429,6 +537,74 @@ export default function GeneratePage() {
                     Generate
                   </button>
                 </div>
+=======
+            {/* Choose reference images */}
+            <div className="mt-3">
+              <a
+                href="#"
+                onClick={(e) => e.preventDefault()}
+                className="flex items-center text-xs font-semibold text-[#e2a85c] hover:text-[#d4994f] transition-colors"
+              >
+                <svg
+                  className="w-4 h-4 mr-1.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="8" width="14" height="14" rx="2" ry="2" />
+                  <path d="M7 4h14a2 2 0 0 1 2 2v14" />
+                </svg>
+                Choose reference images
+              </a>
+            </div>
+
+            {/* Scene Selection Buttons */}
+            <div className="w-full flex flex-wrap gap-2 mt-5">
+              {SCENE_BUTTONS.map((scene, index) => (
+                <button
+                  key={scene.label}
+                  onClick={() => handleSceneSelect(index)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold font-sans transition-all duration-200 cursor-pointer border ${
+                    selectedScene === index
+                      ? "bg-[#e2a85c]/15 border-[#e2a85c] text-[#e2a85c] shadow-[0_0_16px_rgba(226,168,92,0.2)]"
+                      : "bg-[#0f1115] border-neutral-800 text-neutral-400 hover:border-[#856a42] hover:text-neutral-300 hover:bg-[#131620]"
+                  }`}
+                >
+                  <span>{scene.icon}</span>
+                  <span>{scene.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Describe Your Scene card */}
+            <div className="w-full bg-[#0c0e11] border border-neutral-900 rounded-2xl p-5 mt-6 shadow-2xl flex flex-col gap-3">
+              <label className="text-[10px] uppercase font-mono tracking-wider font-bold text-neutral-500 block">
+                DESCRIBE YOUR SCENE
+              </label>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Standing in front of the Eiffel Tower at golden hour, wearing a tailored navy blazer..."
+                className="bg-transparent text-white placeholder-neutral-600 outline-none text-sm w-full py-1 resize-none h-20 font-sans"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
+              />
+
+              <div className="flex justify-end items-center mt-2 border-t border-neutral-900/40 pt-3">
+                <button
+                  onClick={handleGenerate}
+                  className="bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] text-black font-sans font-bold text-sm px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                >
+                  Generate
+                </button>
+>>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
               </div>
             </motion.div>
           )}
