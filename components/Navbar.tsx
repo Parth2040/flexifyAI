@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
+import { useSession } from "@/hooks/useSession";
+import { useGetStarted } from "@/hooks/useGetStarted";
 import { useRouter } from "next/navigation";
 import PrebookModal from "./PrebookModal";
 
@@ -11,31 +13,21 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
-  const { isLoggedIn, logout, prebookOpen, setPrebookOpen } = useAuthStore();
+  const { prebookOpen, setPrebookOpen } = useAuthStore();
+  const { isLoggedIn, logout } = useSession();
+  const handleGetStarted = useGetStarted();
   const router = useRouter();
 
-  const handleLoginClick = (e: React.MouseEvent) => {
+  const handleLoginClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (isLoggedIn) {
-      logout();
+      await logout();
       router.push("/");
     } else {
       router.push("/login");
     }
   };
 
-  const handlePrebookClick = async () => {
-    setPrebookOpen(true);
-    try {
-      await fetch("/api/metrics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metric: "prebook" }),
-      });
-    } catch (err) {
-      console.error("Failed to track prebook click:", err);
-    }
-  };
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -100,7 +92,7 @@ export default function Navbar() {
             {/* Right side */}
             <div className="hidden md:flex items-center gap-4">
               <button
-                onClick={handlePrebookClick}
+                onClick={handleGetStarted}
                 className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-all shadow-[0_4px_16px_rgba(99,102,241,0.2)] hover:shadow-[0_4px_20px_rgba(99,102,241,0.3)] cursor-pointer text-center py-2.5 px-5"
               >
                 Get started
@@ -167,8 +159,8 @@ export default function Navbar() {
             <div className="flex flex-col items-center gap-4 mt-4 w-full px-6">
               <button
                 onClick={() => {
-                  handlePrebookClick();
                   handleNavClick();
+                  handleGetStarted();
                 }}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-sans font-bold text-sm transition-all py-3.5 px-6 cursor-pointer text-center shadow-[0_4px_16px_rgba(99,102,241,0.2)]"
               >

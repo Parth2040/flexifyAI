@@ -4,7 +4,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import RotatingText from "./RotatingText";
 import AnimatedCounter from "./AnimatedCounter";
 import { useGetStarted } from "@/hooks/useGetStarted";
-import { useAuthStore } from "@/store/authStore";
 
 const rotatingLines = [
   "To stand in front of Petra without booking a single flight",
@@ -16,22 +15,7 @@ const rotatingLines = [
 
 export default function Hero() {
   const prefersReducedMotion = useReducedMotion();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const setPrebookOpen = useAuthStore((state) => state.setPrebookOpen);
-
-  const handleHeroGetStarted = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    setPrebookOpen(true);
-    try {
-      await fetch("/api/metrics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metric: "prebook" }),
-      });
-    } catch (err) {
-      console.error("Failed to track prebook click:", err);
-    }
-  };
+  const handleHeroGetStarted = useGetStarted();
 
   const ease = [0.22, 1, 0.36, 1] as const;
 

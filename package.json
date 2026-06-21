@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:check": "node scripts/db-check.mjs"
   },
   "dependencies": {
     "framer-motion": "^12.40.0",

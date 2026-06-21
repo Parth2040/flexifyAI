@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
 
 // Predefined starry coordinates to avoid hydration mismatches
 const stars = [
@@ -25,25 +24,49 @@ const stars = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Surface any error passed back from the OAuth callback (?error=...).
+  useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get("error");
+    if (err) setErrorMsg(err);
+  }, []);
 
   const handleBack = (e: React.MouseEvent) => {
     e.preventDefault();
     router.push("/");
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login();
-    router.push("/generate");
+    setErrorMsg("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        router.push("/generate");
+      } else {
+        setErrorMsg(data.error || "Could not sign you in.");
+      }
+    } catch {
+      setErrorMsg("Connection error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleGoogleLogin = (e: React.MouseEvent) => {
     e.preventDefault();
-    login();
-    router.push("/generate");
+    // Full-page navigation: the server route redirects to Google's consent screen.
+    window.location.href = "/api/auth/google";
   };
 
   return (
@@ -112,6 +135,12 @@ export default function LoginPage() {
         </p>
 
         <form onSubmit={handleLogin} className="w-full flex flex-col gap-4">
+          {errorMsg && (
+            <div className="text-xs text-red-400 bg-red-950/30 border border-red-900/50 p-3 rounded-xl text-center">
+              {errorMsg}
+            </div>
+          )}
+
           {/* Continue with Google */}
           <button
             onClick={handleGoogleLogin}
@@ -183,9 +212,10 @@ export default function LoginPage() {
           {/* Login Button using theme's btn-gold */}
           <button
             type="submit"
-            className="w-full btn-gold !py-3.5 !w-full justify-center rounded-xl mt-2 cursor-pointer"
+            disabled={submitting}
+            className="w-full btn-gold !py-3.5 !w-full justify-center rounded-xl mt-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Log in
+            {submitting ? "Signing in…" : "Log in"}
           </button>
         </form>
       </div>

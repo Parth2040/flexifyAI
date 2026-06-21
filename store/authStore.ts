@@ -2,18 +2,16 @@
 
 import { create } from "zustand";
 
-interface AuthState {
-  isLoggedIn: boolean;
-  login: () => void;
-  logout: () => void;
+/**
+ * UI store. Auth state now lives in the real session (see `hooks/useSession`);
+ * this store only holds transient UI state like the prebook modal.
+ */
+interface UIState {
   prebookOpen: boolean;
   setPrebookOpen: (open: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isLoggedIn: false,
-  login: () => set({ isLoggedIn: true }),
-  logout: () => set({ isLoggedIn: false }),
+export const useAuthStore = create<UIState>((set) => ({
   prebookOpen: false,
   setPrebookOpen: (open) => set({ prebookOpen: open }),
 }));

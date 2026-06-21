@@ -1,22 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
 
+/**
+ * "Get Started" always sends the user to the image generation page.
+ * If they aren't signed in, the /generate proxy guard redirects them to /login.
+ */
 export function useGetStarted() {
   const router = useRouter();
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
 
   const handleGetStarted = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    if (isLoggedIn) {
-      router.push("/generate");
-    } else {
-      router.push("/login");
-    }
+    router.push("/generate");
   };
 
   return handleGetStarted;
