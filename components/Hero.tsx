@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import RotatingText from "./RotatingText";
 import AnimatedCounter from "./AnimatedCounter";
+import BeforeAfterCompare from "./BeforeAfterCompare";
 import { useGetStarted } from "@/hooks/useGetStarted";
 
 const rotatingLines = [
@@ -102,31 +103,13 @@ export default function Hero() {
             transition={{ duration: 0.9, delay: 0.3, ease }}
           >
             <div className="w-full max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#0c0e12] border border-white/[0.06] shadow-2xl shadow-black/60">
-              <div className="grid grid-cols-2 gap-px bg-white/[0.06]">
-                {/* Before Image */}
-                <div className="relative w-full h-[280px] sm:h-[340px] overflow-hidden">
-                  <img
-                    src="/before-after/paris-before.jpg"
-                    alt="Before: Selfie"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-sans font-bold px-3.5 py-1.5 rounded-full uppercase tracking-widest border border-white/10 shadow-lg select-none z-10">
-                    BEFORE
-                  </div>
-                </div>
-
-                {/* After Image */}
-                <div className="relative w-full h-[280px] sm:h-[340px] overflow-hidden">
-                  <img
-                    src="/before-after/paris-after.jpg"
-                    alt="After: Eiffel Tower"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-sans font-bold px-3.5 py-1.5 rounded-full uppercase tracking-widest border border-white/10 shadow-lg select-none z-10">
-                    AFTER
-                  </div>
-                </div>
-              </div>
+              <BeforeAfterCompare
+                beforeImage="/before-after/paris-before.jpg"
+                afterImage="/before-after/paris-after.jpg"
+                beforeAlt="Before: your selfie"
+                afterAlt="After: in front of the Eiffel Tower"
+                className="w-full h-[340px] sm:h-[460px]"
+              />
             </div>
           </motion.div>
         </div>

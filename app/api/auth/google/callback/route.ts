@@ -93,6 +93,8 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Google OAuth callback error:", error);
-    return fail("Something went wrong during sign-in.");
+    // Surface the real reason so it shows in the login banner (dev aid).
+    const detail = error instanceof Error ? error.message : "unknown error";
+    return fail(`Sign-in failed: ${detail}`);
   }
 }

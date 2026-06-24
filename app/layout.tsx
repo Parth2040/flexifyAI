@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { PostHogProvider } from "./providers";
+import Analytics from "@/components/Analytics";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces-var",
@@ -58,7 +60,12 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${manrope.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <PostHogProvider>
+          <Analytics />
+          {children}
+        </PostHogProvider>
+      </body>
     </html>
   );
 }

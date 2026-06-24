@@ -37,7 +37,7 @@ export default function BeforeAfterShowcase() {
   const marqueeItems = [...destinations, ...destinations, ...destinations];
 
   return (
-    <section id="features" className="section-padding overflow-hidden">
+    <section id="features" className="py-8 sm:py-12 overflow-hidden">
       <div className="max-w-7xl mx-auto">
 
         {/* Infinite Marquee Cards Container (Full Width) */}
@@ -62,7 +62,7 @@ export default function BeforeAfterShowcase() {
             {marqueeItems.map((dest, idx) => (
               <div
                 key={idx}
-                className="w-[340px] sm:w-[420px] md:w-[460px] shrink-0"
+                className="w-[260px] sm:w-[300px] md:w-[320px] shrink-0"
               >
                 <div className="rounded-2xl overflow-hidden bg-[#0c0e12] border border-white/[0.06] shadow-xl">
                   <BeforeAfterSlider

@@ -1,6 +1,16 @@
 // Throwaway connectivity + schema check. Run: node scripts/db-check.mjs
 import { readFileSync } from "node:fs";
+import dns from "node:dns";
 import { MongoClient } from "mongodb";
+
+// mongodb+srv:// needs a DNS SRV lookup. Some local/ISP/VPN resolvers refuse
+// SRV queries (Node throws `querySrv ECONNREFUSED`). Prefer public resolvers
+// that support SRV, keeping the system ones as fallback.
+try {
+  dns.setServers([...new Set(["1.1.1.1", "8.8.8.8", ...dns.getServers()])]);
+} catch {
+  /* fall back to system DNS */
+}
 
 // Load MONGODB_URI from .env.local (no dotenv dependency).
 const env = readFileSync(new URL("../.env.local", import.meta.url), "utf8");

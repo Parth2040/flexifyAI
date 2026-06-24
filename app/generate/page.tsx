@@ -7,39 +7,39 @@ import { useSession } from "@/hooks/useSession";
 
 type GenerationState = "idle" | "loading" | "result" | "error";
 
-const PRESETS = [
-  { label: "🏎️ Supercar", prompt: "Standing confidently next to a matte-black supercar on a coastal road at golden hour, cinematic lighting, ultra realistic." },
-  { label: "🗼 Eiffel Tower", prompt: "In front of the Eiffel Tower at golden hour, wearing a tailored navy blazer, photorealistic." },
-  { label: "🛥️ Luxury yacht", prompt: "Relaxing on the deck of a luxury yacht in the Mediterranean, bright sunny day, ultra realistic." },
-  { label: "✈️ Private jet", prompt: "Boarding a private jet on the tarmac at sunset, stylish outfit, cinematic, ultra realistic." },
-  { label: "🏔️ Swiss Alps", prompt: "Standing on a viewpoint in the Swiss Alps with snowy peaks behind, warm winter outfit, photorealistic." },
+// Scene presets — selecting one fills the prompt that gets sent to the API.
+const SCENE_BUTTONS = [
+  { label: "Eiffel Tower", icon: "🗼", prompt: "In front of the Eiffel Tower at golden hour, wearing a tailored navy blazer, photorealistic." },
+  { label: "Statue of Liberty", icon: "🗽", prompt: "Standing in front of the Statue of Liberty in New York on a bright clear day, stylish outfit, photorealistic." },
+  { label: "Supercar", icon: "🏎️", prompt: "Standing confidently next to a matte-black supercar on a coastal road at golden hour, cinematic lighting, ultra realistic." },
+  { label: "Private Jet", icon: "✈️", prompt: "Boarding a private jet on the tarmac at sunset, stylish outfit, cinematic, ultra realistic." },
+  { label: "Yacht", icon: "🛥️", prompt: "Relaxing on the deck of a luxury yacht in the Mediterranean, bright sunny day, ultra realistic." },
+  { label: "Colosseum", icon: "🏛️", prompt: "Standing in front of the Roman Colosseum in Italy at golden hour, smart casual outfit, photorealistic." },
+  { label: "Swiss Alps", icon: "🏔️", prompt: "Standing on a viewpoint in the Swiss Alps with snowy peaks behind, warm winter outfit, photorealistic." },
 ];
 
-const SCENE_BUTTONS = [
-  { label: "Eiffel Tower", icon: "🗼", image: "/generated/result-1.jpg" },
-  { label: "Supercar", icon: "🏎️", image: "/generated/result-2.jpg" },
-  { label: "Private Jet", icon: "✈️", image: "/generated/result-3.jpg" },
-  { label: "Yacht", icon: "🛥️", image: "/generated/result-4.jpg" },
-  { label: "Aesthetic", icon: "✨", image: "/generated/result-5.jpg" },
-];
+// Reference image must be one of these formats.
+const ALLOWED_TYPES = ["image/jpeg", "image/png"]; // image/jpeg covers .jpg & .jpeg
+
+// Price shown on the locked result before redirecting to the pricing page.
+const UNLOCK_PRICE = "$7.99";
 
 export default function GeneratePage() {
   const router = useRouter();
-  const { isLoggedIn, loading: sessionLoading, logout } = useSession();
+  const { isLoggedIn, loading: sessionLoading } = useSession();
 
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageDims, setImageDims] = useState<{ w: number; h: number } | null>(null);
   const [prompt, setPrompt] = useState("");
   const [genState, setGenState] = useState<GenerationState>("idle");
   const [progress, setProgress] = useState(0);
-<<<<<<< HEAD
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultUnlocked, setResultUnlocked] = useState(false);
+  const [tokens, setTokens] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
-=======
-  const [currentResultImage, setCurrentResultImage] = useState(SCENE_BUTTONS[0].image);
   const [selectedScene, setSelectedScene] = useState<number | null>(null);
->>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -49,6 +49,17 @@ export default function GeneratePage() {
       router.push("/login");
     }
   }, [sessionLoading, isLoggedIn, router]);
+
+  // Load the live token balance once signed in.
+  useEffect(() => {
+    if (sessionLoading || !isLoggedIn) return;
+    fetch("/api/account")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.tokens === "number") setTokens(d.tokens);
+      })
+      .catch(() => {});
+  }, [sessionLoading, isLoggedIn]);
 
   // Clean up object URL + timers on unmount.
   useEffect(() => {
@@ -74,13 +85,24 @@ export default function GeneratePage() {
   };
 
   const processFile = (file: File) => {
-    if (file && file.type.startsWith("image/")) {
-      setSelectedFile(file);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(URL.createObjectURL(file));
-      setGenState("idle");
-      setProgress(0);
+    if (!file) return;
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setErrorMsg("Unsupported format. Please upload a JPG, JPEG, or PNG image.");
+      setGenState("error");
+      return;
     }
+    setSelectedFile(file);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    // Read the natural dimensions so we can match the output aspect ratio.
+    setImageDims(null);
+    const img = new window.Image();
+    img.onload = () => setImageDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = url;
+    setErrorMsg("");
+    setGenState("idle");
+    setProgress(0);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -102,15 +124,10 @@ export default function GeneratePage() {
     setSelectedFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    setImageDims(null);
     setGenState("idle");
     setProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    await logout();
-    router.push("/");
   };
 
   const handleBackHome = (e: React.MouseEvent) => {
@@ -118,7 +135,21 @@ export default function GeneratePage() {
     router.push("/");
   };
 
-<<<<<<< HEAD
+  // Unlock requires payment — send the user to the pricing section.
+  const goToPricing = () => {
+    router.push("/#pricing");
+  };
+
+  // Pick a scene preset: toggles selection and fills the prompt.
+  const handleSceneSelect = (index: number) => {
+    if (selectedScene === index) {
+      setSelectedScene(null);
+    } else {
+      setSelectedScene(index);
+      setPrompt(SCENE_BUTTONS[index].prompt);
+    }
+  };
+
   const startFakeProgress = () => {
     setProgress(0);
     progressTimer.current = setInterval(() => {
@@ -142,25 +173,9 @@ export default function GeneratePage() {
     }
     const finalPrompt = prompt.trim();
     if (!finalPrompt) {
-      setErrorMsg("Describe the scene you want, or pick a preset below.");
+      setErrorMsg("Describe the scene you want, or pick one below.");
       setGenState("error");
       return;
-=======
-  const handleSceneSelect = (index: number) => {
-    setSelectedScene(selectedScene === index ? null : index);
-  };
-
-  const handleGenerate = () => {
-    // Use selected scene button's image, or fall back to first scene
-    if (selectedScene !== null) {
-      setCurrentResultImage(SCENE_BUTTONS[selectedScene].image);
-    } else {
-      // No scene selected — cycle through images via localStorage
-      const storedIndex = parseInt(localStorage.getItem("flexify_gen_index") || "0", 10);
-      const imageIndex = storedIndex % SCENE_BUTTONS.length;
-      setCurrentResultImage(SCENE_BUTTONS[imageIndex].image);
-      localStorage.setItem("flexify_gen_index", String(storedIndex + 1));
->>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
     }
 
     setErrorMsg("");
@@ -171,6 +186,10 @@ export default function GeneratePage() {
       const formData = new FormData();
       formData.append("image", selectedFile);
       formData.append("prompt", finalPrompt);
+      if (imageDims) {
+        formData.append("width", String(imageDims.w));
+        formData.append("height", String(imageDims.h));
+      }
 
       const res = await fetch("/api/generate", { method: "POST", body: formData });
       const data = await res.json();
@@ -185,6 +204,8 @@ export default function GeneratePage() {
 
       setProgress(100);
       setResultUrl(data.image);
+      setResultUnlocked(!!data.unlocked);
+      if (typeof data.tokens === "number") setTokens(data.tokens);
       setTimeout(() => setGenState("result"), 300);
     } catch {
       stopProgress();
@@ -204,6 +225,7 @@ export default function GeneratePage() {
     setErrorMsg("");
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
+    setImageDims(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -226,12 +248,16 @@ export default function GeneratePage() {
           flexify ai
         </a>
         <div className="flex items-center gap-4">
+          <button
+            onClick={goToPricing}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#e2a85c] bg-[#e2a85c]/10 border border-[#e2a85c]/30 hover:bg-[#e2a85c]/20 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+            title="Buy more tokens"
+          >
+            <span>🪙</span>
+            <span>{tokens === null ? "…" : tokens.toLocaleString()} tokens</span>
+          </button>
           <button onClick={handleBackHome} className="text-xs font-medium text-neutral-400 hover:text-white transition-colors">
             Home
-          </button>
-          <span className="text-neutral-800">|</span>
-          <button onClick={handleLogout} className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors">
-            Log out
           </button>
         </div>
       </header>
@@ -290,33 +316,96 @@ export default function GeneratePage() {
               exit={{ opacity: 0 }}
               className="w-full flex flex-col items-center gap-5 mt-4"
             >
-              <h2 className="text-xl sm:text-2xl font-serif font-semibold text-neutral-200 text-center">
-                Your generated image
-              </h2>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60 relative group"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={resultUrl} alt="Generated result" className="w-full h-auto object-cover" />
-              </motion.div>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={handleNewGeneration}
-                  className="flex-1 py-3.5 bg-transparent border border-neutral-800 text-white hover:border-neutral-600 rounded-2xl font-sans text-sm font-medium transition-all cursor-pointer"
-                >
-                  Generate another
-                </button>
-                <a
-                  href={resultUrl}
-                  download="flexify-generated.png"
-                  className="flex-1 py-3.5 bg-[#e2a85c] hover:bg-[#d4994f] text-black rounded-2xl font-sans text-sm font-bold transition-all cursor-pointer text-center shadow-[0_4px_20px_rgba(226,168,92,0.25)] flex items-center justify-center"
-                >
-                  Download
-                </a>
-              </div>
+              {resultUnlocked ? (
+                /* ── UNLOCKED: clear image + download ── */
+                <>
+                  <h2 className="text-xl sm:text-2xl font-serif font-semibold text-neutral-200 text-center">
+                    Your image is ready
+                  </h2>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={resultUrl} alt="Generated result" className="w-full h-auto object-cover" />
+                  </motion.div>
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={handleNewGeneration}
+                      className="flex-1 py-3.5 bg-transparent border border-neutral-800 text-white hover:border-neutral-600 rounded-2xl font-sans text-sm font-medium transition-all cursor-pointer"
+                    >
+                      Generate another
+                    </button>
+                    <a
+                      href={resultUrl}
+                      download="flexify-generated.png"
+                      className="flex-1 py-3.5 bg-[#e2a85c] hover:bg-[#d4994f] text-black rounded-2xl font-sans text-sm font-bold transition-all cursor-pointer text-center shadow-[0_4px_20px_rgba(226,168,92,0.25)] flex items-center justify-center"
+                    >
+                      Download
+                    </a>
+                  </div>
+                </>
+              ) : (
+                /* ── LOCKED: blurred preview, pay to unlock ── */
+                <>
+                  <div className="flex items-center gap-2 text-neutral-200">
+                    <svg className="w-5 h-5 text-[#e2a85c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <h2 className="text-xl sm:text-2xl font-serif font-semibold text-center">
+                      Unlock your image
+                    </h2>
+                  </div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60 relative"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={resultUrl}
+                      alt="Generated result preview (locked)"
+                      draggable={false}
+                      className="w-full h-auto object-cover blur-2xl scale-110 select-none pointer-events-none"
+                    />
+
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/45 text-center px-6">
+                      <div className="w-12 h-12 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white shadow-lg">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      </div>
+                      <p className="font-sans text-sm font-semibold text-white">
+                        Unlock for {UNLOCK_PRICE}
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  <button
+                    onClick={goToPricing}
+                    className="w-full flex items-center justify-center gap-2 bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] text-black font-sans font-bold text-sm py-3.5 rounded-2xl transition-all shadow-[0_4px_20px_rgba(226,168,92,0.3)] cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                    </svg>
+                    Unlock with a plan
+                  </button>
+
+                  <button
+                    onClick={handleNewGeneration}
+                    className="text-xs font-medium text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+                  >
+                    Generate another
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
 
@@ -359,7 +448,7 @@ export default function GeneratePage() {
                 Import your photo
               </h1>
               <p className="text-sm text-neutral-500 text-center mb-6">
-                Upload a clear photo of yourself, then describe the scene.
+                Upload a clear photo of yourself, pick a scene or describe your own.
               </p>
 
               {/* Upload Dropzone */}
@@ -392,7 +481,7 @@ export default function GeneratePage() {
                       ref={fileInputRef}
                       type="file"
                       className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                       onChange={handleChange}
                     />
                     <div className="flex flex-col items-center text-center pointer-events-none">
@@ -405,7 +494,7 @@ export default function GeneratePage() {
                       <p className="text-base font-sans font-bold text-[#e2a85c] mb-1">Click to upload</p>
                       <p className="text-sm font-sans text-neutral-400 mb-6">or drag and drop your photo here</p>
                       <div className="flex gap-2.5">
-                        {["JPG", "PNG", "WEBP"].map((ext) => (
+                        {["JPG", "JPEG", "PNG"].map((ext) => (
                           <span key={ext} className="text-[10px] uppercase font-mono tracking-wider font-semibold text-neutral-500 bg-[#121418] border border-neutral-800 px-3 py-1 rounded-md">
                             {ext}
                           </span>
@@ -416,6 +505,24 @@ export default function GeneratePage() {
                 )}
               </div>
 
+              {/* Scene Selection Buttons */}
+              <div className="w-full flex flex-wrap gap-2 mt-5">
+                {SCENE_BUTTONS.map((scene, index) => (
+                  <button
+                    key={scene.label}
+                    onClick={() => handleSceneSelect(index)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold font-sans transition-all duration-200 cursor-pointer border ${
+                      selectedScene === index
+                        ? "bg-[#e2a85c]/15 border-[#e2a85c] text-[#e2a85c] shadow-[0_0_16px_rgba(226,168,92,0.2)]"
+                        : "bg-[#0f1115] border-neutral-800 text-neutral-400 hover:border-[#856a42] hover:text-neutral-300 hover:bg-[#131620]"
+                    }`}
+                  >
+                    <span>{scene.icon}</span>
+                    <span>{scene.label}</span>
+                  </button>
+                ))}
+              </div>
+
               {/* Describe Your Scene card */}
               <div className="w-full bg-[#0c0e11] border border-neutral-900 rounded-2xl p-5 mt-6 shadow-2xl flex flex-col gap-3">
                 <label className="text-[10px] uppercase font-mono tracking-wider font-bold text-neutral-500 block">
@@ -423,7 +530,10 @@ export default function GeneratePage() {
                 </label>
                 <textarea
                   value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
+                  onChange={(e) => {
+                    setPrompt(e.target.value);
+                    setSelectedScene(null);
+                  }}
                   placeholder="Standing in front of the Eiffel Tower at golden hour, wearing a tailored navy blazer…"
                   className="bg-transparent text-white placeholder-neutral-600 outline-none text-sm w-full py-1 resize-none h-20 font-sans"
                   onKeyDown={(e) => {
@@ -434,97 +544,6 @@ export default function GeneratePage() {
                   }}
                 />
 
-<<<<<<< HEAD
-                {/* Preset scene chips */}
-                <div className="flex flex-wrap gap-2">
-                  {PRESETS.map((preset) => (
-=======
-            {/* Progress bar */}
-            <div className="w-full max-w-xs h-1 bg-neutral-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-200 ease-out"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── RESULT STATE ── */}
-        {genState === "result" && (
-          <div className="w-full flex flex-col items-center gap-5 animate-fadeIn mt-4">
-            <h2 className="text-xl sm:text-2xl font-serif font-semibold text-neutral-200 text-center">
-              Your generated image
-            </h2>
-
-            {/* Static result image */}
-            <div className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60 relative group">
-              <img
-                src={currentResultImage}
-                alt="Generated result"
-                className="w-full h-auto object-cover"
-              />
-              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={handleNewGeneration}
-                className="flex-1 py-3.5 bg-transparent border border-neutral-800 text-white hover:border-neutral-600 rounded-2xl font-sans text-sm font-medium transition-all cursor-pointer"
-              >
-                Generate another
-              </button>
-              <a
-                href={currentResultImage}
-                download="flexify-generated.jpg"
-                className="flex-1 py-3.5 bg-[#e2a85c] hover:bg-[#d4994f] text-black rounded-2xl font-sans text-sm font-bold transition-all cursor-pointer text-center shadow-[0_4px_20px_rgba(226,168,92,0.25)]"
-              >
-                Download
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* ── IDLE STATE (Upload + Prompt) ── */}
-        {genState === "idle" && (
-          <>
-            {/* Title */}
-            <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-6 text-neutral-200">
-              Import your photo
-            </h1>
-
-            {/* Upload Dropzone — matching screenshot 2 style */}
-            <div
-              onDragEnter={handleDrag}
-              onDragOver={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-              className={`relative w-full h-[280px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all duration-300 overflow-hidden ${dragActive
-                  ? "border-[#e2a85c] bg-[#e2a85c]/5"
-                  : "border-[#4a3b2c] bg-[#0c0e11] hover:border-[#856a42] hover:bg-[#121419]/40"
-                }`}
-            >
-              {previewUrl ? (
-                <div className="absolute inset-0 w-full h-full group z-20">
-                  <img
-                    src={previewUrl}
-                    alt="Upload preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
->>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => setPrompt(preset.prompt)}
-                      className="text-xs font-medium text-neutral-300 bg-[#15171c] border border-neutral-800 hover:border-[#856a42] hover:text-white px-3 py-1.5 rounded-full transition-all cursor-pointer"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-
-<<<<<<< HEAD
                 <div className="flex justify-between items-center mt-2 border-t border-neutral-900/40 pt-3">
                   <span className="text-[11px] font-mono text-neutral-600">
                     {selectedFile ? "Photo ready" : "Upload a photo to start"}
@@ -537,74 +556,6 @@ export default function GeneratePage() {
                     Generate
                   </button>
                 </div>
-=======
-            {/* Choose reference images */}
-            <div className="mt-3">
-              <a
-                href="#"
-                onClick={(e) => e.preventDefault()}
-                className="flex items-center text-xs font-semibold text-[#e2a85c] hover:text-[#d4994f] transition-colors"
-              >
-                <svg
-                  className="w-4 h-4 mr-1.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="8" width="14" height="14" rx="2" ry="2" />
-                  <path d="M7 4h14a2 2 0 0 1 2 2v14" />
-                </svg>
-                Choose reference images
-              </a>
-            </div>
-
-            {/* Scene Selection Buttons */}
-            <div className="w-full flex flex-wrap gap-2 mt-5">
-              {SCENE_BUTTONS.map((scene, index) => (
-                <button
-                  key={scene.label}
-                  onClick={() => handleSceneSelect(index)}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold font-sans transition-all duration-200 cursor-pointer border ${
-                    selectedScene === index
-                      ? "bg-[#e2a85c]/15 border-[#e2a85c] text-[#e2a85c] shadow-[0_0_16px_rgba(226,168,92,0.2)]"
-                      : "bg-[#0f1115] border-neutral-800 text-neutral-400 hover:border-[#856a42] hover:text-neutral-300 hover:bg-[#131620]"
-                  }`}
-                >
-                  <span>{scene.icon}</span>
-                  <span>{scene.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Describe Your Scene card */}
-            <div className="w-full bg-[#0c0e11] border border-neutral-900 rounded-2xl p-5 mt-6 shadow-2xl flex flex-col gap-3">
-              <label className="text-[10px] uppercase font-mono tracking-wider font-bold text-neutral-500 block">
-                DESCRIBE YOUR SCENE
-              </label>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Standing in front of the Eiffel Tower at golden hour, wearing a tailored navy blazer..."
-                className="bg-transparent text-white placeholder-neutral-600 outline-none text-sm w-full py-1 resize-none h-20 font-sans"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleGenerate();
-                  }
-                }}
-              />
-
-              <div className="flex justify-end items-center mt-2 border-t border-neutral-900/40 pt-3">
-                <button
-                  onClick={handleGenerate}
-                  className="bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] text-black font-sans font-bold text-sm px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
-                >
-                  Generate
-                </button>
->>>>>>> b4e1c2901d557ac8fb2f03422b71de560dde199c
               </div>
             </motion.div>
           )}

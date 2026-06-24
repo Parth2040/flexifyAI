@@ -1,15 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useAuthStore } from "@/store/authStore";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/hooks/useSession";
 
 const plans = [
   {
-    name: "Pro Weekly",
-    price: "€2.99",
+    id: "weekly_basic",
+    name: "Weekly Pass",
+    price: "$4",
     period: "/ week",
-    subPrice: "~€13.00/month",
-    credits: "500 credits · 10 images / week",
+    subPrice: "~$17.00 / month",
+    credits: "100 Credits · 10 generations",
+    perGen: "$0.40 / generation",
     features: [
       "AI image generation",
       "Ultra-realistic output (4K)",
@@ -21,11 +25,13 @@ const plans = [
     badge: null,
   },
   {
-    name: "Pro Weekly",
-    price: "€5.99",
-    period: "/ week",
-    subPrice: "~€26.00/month",
-    credits: "10,000 credits · 200 images / week",
+    id: "weekly_pro",
+    name: "Pro Monthly",
+    price: "$10",
+    period: "/ month",
+    subPrice: "~$120.00 / year",
+    credits: "500 Credits · 50 generations",
+    perGen: "$0.20 / generation",
     features: [
       "AI image generation",
       "Ultra-realistic output (4K)",
@@ -33,15 +39,17 @@ const plans = [
       "Access to every preset collection",
       "24/7 support",
     ],
-    highlighted: false,
-    badge: null,
+    highlighted: true,
+    badge: "⭐ Most Popular",
   },
   {
+    id: "annual",
     name: "Pro Annual",
-    price: "€59.99",
+    price: "$80",
     period: "/ year",
-    subPrice: "~€4.99/month",
-    credits: "1,650 credits/month · 33 images / month",
+    subPrice: "~$6.67 / month",
+    credits: "6,000 Credits · 600 generations",
+    perGen: "$0.13 / generation",
     features: [
       "AI image generation",
       "Ultra-realistic output (4K)",
@@ -50,25 +58,43 @@ const plans = [
       "24/7 support",
     ],
     highlighted: false,
-    badge: null,
+    badge: "🔥 Best Value",
   },
 ];
 
 export default function Pricing() {
   const prefersReducedMotion = useReducedMotion();
-  const setPrebookOpen = useAuthStore((state) => state.setPrebookOpen);
+  const router = useRouter();
+  const { isLoggedIn } = useSession();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [err, setErr] = useState("");
 
-  const handleChoosePlan = async (e: React.MouseEvent, planName: string) => {
-    e.preventDefault();
-    setPrebookOpen(true);
+  const handleChoosePlan = async (planId: string) => {
+    if (loadingPlan) return;
+    // Must be signed in so we can attribute the purchase + credit tokens.
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+    setErr("");
+    setLoadingPlan(planId);
     try {
-      await fetch("/api/metrics", {
+      const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ metric: "prebook" }),
+        body: JSON.stringify({ planId }),
       });
-    } catch (err) {
-      console.error("Failed to track prebook click:", err);
+      const data = await res.json();
+      if (res.ok && data.checkoutUrl) {
+        // Hand off to Polar's hosted checkout.
+        window.location.href = data.checkoutUrl;
+      } else {
+        setErr(data.error || "Could not start checkout. Please try again.");
+        setLoadingPlan(null);
+      }
+    } catch {
+      setErr("Connection error. Please try again.");
+      setLoadingPlan(null);
     }
   };
 
@@ -114,7 +140,7 @@ export default function Pricing() {
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          Full access either way. Cancel anytime. Payments handled securely by Stripe.
+          Full access either way. Cancel anytime. Payments handled securely by Polar.
         </motion.p>
 
         {/* Pricing Cards Grid */}
@@ -134,9 +160,14 @@ export default function Pricing() {
                 : "border border-neutral-900"
                 }`}
             >
-              {/* Highlight Badge */}
-              {plan.highlighted && plan.badge && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-600 text-white font-mono text-[9px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-indigo-400/40">
+              {/* Badge */}
+              {plan.badge && (
+                <div
+                  className={`absolute -top-3.5 left-1/2 -translate-x-1/2 font-mono text-[9px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border whitespace-nowrap ${plan.highlighted
+                    ? "bg-indigo-600 text-white border-indigo-400/40"
+                    : "bg-[#1a1d24] text-neutral-300 border-neutral-700"
+                    }`}
+                >
                   {plan.badge}
                 </div>
               )}
@@ -160,8 +191,12 @@ export default function Pricing() {
                   {plan.subPrice}
                 </p>
 
-                <p className="font-sans text-sm text-neutral-300 leading-relaxed mb-8">
+                <p className="font-sans text-sm text-neutral-300 leading-relaxed mb-1">
                   {plan.credits}
+                </p>
+
+                <p className="font-mono text-xs text-gold/80 mb-8">
+                  {plan.perGen}
                 </p>
 
                 {/* Features List */}
@@ -176,25 +211,24 @@ export default function Pricing() {
 
               {/* Action Button */}
               <div className="mt-auto pt-4">
-                {plan.highlighted ? (
-                  <button
-                    onClick={(e) => handleChoosePlan(e, plan.name)}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-full font-bold text-xs uppercase tracking-widest transition-all shadow-[0_4px_20px_rgba(99,102,241,0.35)] hover:shadow-[0_4px_24px_rgba(99,102,241,0.45)] cursor-pointer text-center"
-                  >
-                    CHOOSE THIS PLAN
-                  </button>
-                ) : (
-                  <button
-                    onClick={(e) => handleChoosePlan(e, plan.name)}
-                    className="w-full py-4 bg-transparent border border-neutral-800 text-indigo-400 hover:text-indigo-300 hover:border-neutral-700 rounded-full font-bold text-sm transition-all cursor-pointer text-center"
-                  >
-                    Choose this plan
-                  </button>
-                )}
+                <button
+                  onClick={() => handleChoosePlan(plan.id)}
+                  disabled={loadingPlan === plan.id}
+                  className={`w-full py-4 rounded-full font-bold text-sm transition-all cursor-pointer text-center disabled:opacity-60 disabled:cursor-not-allowed ${plan.highlighted
+                    ? "bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white uppercase text-xs tracking-widest shadow-[0_4px_20px_rgba(99,102,241,0.35)] hover:shadow-[0_4px_24px_rgba(99,102,241,0.45)]"
+                    : "bg-transparent border border-neutral-800 text-indigo-400 hover:text-indigo-300 hover:border-neutral-700"
+                    }`}
+                >
+                  {loadingPlan === plan.id ? "Redirecting…" : "Choose this plan"}
+                </button>
               </div>
             </motion.div>
           ))}
         </motion.div>
+
+        {err && (
+          <p className="text-center text-sm text-red-400 mt-8">{err}</p>
+        )}
       </div>
     </section>
   );

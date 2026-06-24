@@ -18,7 +18,7 @@ export default function BeforeAfterSlider({
   return (
     <div className="flex flex-col gap-0 w-full">
       {/* Before Panel */}
-      <div className="relative w-full h-[280px] sm:h-[340px] md:h-[380px] overflow-hidden">
+      <div className="relative w-full h-[180px] sm:h-[210px] overflow-hidden">
         {beforeImage ? (
           <img
             src={beforeImage}
@@ -39,7 +39,7 @@ export default function BeforeAfterSlider({
       </div>
 
       {/* After Panel */}
-      <div className="relative w-full h-[280px] sm:h-[340px] md:h-[380px] overflow-hidden">
+      <div className="relative w-full h-[180px] sm:h-[210px] overflow-hidden">
         {afterImage ? (
           <img
             src={afterImage}

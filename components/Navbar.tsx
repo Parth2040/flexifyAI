@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
-import { useSession } from "@/hooks/useSession";
 import { useGetStarted } from "@/hooks/useGetStarted";
-import { useRouter } from "next/navigation";
 import PrebookModal from "./PrebookModal";
 
 export default function Navbar() {
@@ -14,19 +12,7 @@ export default function Navbar() {
   const prefersReducedMotion = useReducedMotion();
 
   const { prebookOpen, setPrebookOpen } = useAuthStore();
-  const { isLoggedIn, logout } = useSession();
   const handleGetStarted = useGetStarted();
-  const router = useRouter();
-
-  const handleLoginClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isLoggedIn) {
-      await logout();
-      router.push("/");
-    } else {
-      router.push("/login");
-    }
-  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -93,17 +79,10 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-4">
               <button
                 onClick={handleGetStarted}
-                className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-all shadow-[0_4px_16px_rgba(99,102,241,0.2)] hover:shadow-[0_4px_20px_rgba(99,102,241,0.3)] cursor-pointer text-center py-2.5 px-5"
+                className="bg-gold hover:bg-[#e4bd78] text-ink rounded-xl font-sans font-bold text-xs uppercase tracking-wider transition-all shadow-[0_4px_16px_rgba(215,173,102,0.25)] hover:shadow-[0_6px_24px_rgba(215,173,102,0.35)] hover:-translate-y-px cursor-pointer text-center py-2.5 px-6"
               >
-                Get started
+                Create
               </button>
-              <a
-                href="#"
-                className="btn-ghost text-sm"
-                onClick={handleLoginClick}
-              >
-                {isLoggedIn ? "Log out" : "Log in"}
-              </a>
             </div>
 
             {/* Mobile hamburger */}
@@ -162,20 +141,10 @@ export default function Navbar() {
                   handleNavClick();
                   handleGetStarted();
                 }}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-sans font-bold text-sm transition-all py-3.5 px-6 cursor-pointer text-center shadow-[0_4px_16px_rgba(99,102,241,0.2)]"
+                className="w-full bg-gold hover:bg-[#e4bd78] text-ink rounded-xl font-sans font-bold text-sm transition-all py-3.5 px-6 cursor-pointer text-center shadow-[0_4px_16px_rgba(215,173,102,0.25)]"
               >
-                Get started
+                Create
               </button>
-              <a
-                href="#"
-                className="text-mist hover:text-parchment transition-colors text-lg"
-                onClick={(e) => {
-                  handleLoginClick(e);
-                  handleNavClick();
-                }}
-              >
-                {isLoggedIn ? "Log out" : "Log in"}
-              </a>
             </div>
           </motion.div>
         )}
