@@ -30,7 +30,10 @@ const GENERATION_COST = 10;
 
 // Fixed teaser image shown (blurred) when the user can't afford a generation.
 // No AI is ever called in this case.
-const LOCKED_PLACEHOLDER = "/before-after/paris-after.jpg";
+const LOCKED_PLACEHOLDER = "/locked-preview.jpg";
+
+// How long the "generating" loader runs for the no-credits path (ms).
+const NO_CREDITS_LOADING_MS = 10000;
 
 export default function GeneratePage() {
   const router = useRouter();
@@ -50,6 +53,7 @@ export default function GeneratePage() {
   const [selectedScene, setSelectedScene] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auth guard (proxy.ts also protects this route server-side).
   useEffect(() => {
@@ -74,6 +78,7 @@ export default function GeneratePage() {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       if (progressTimer.current) clearInterval(progressTimer.current);
+      if (revealTimer.current) clearTimeout(revealTimer.current);
     };
   }, [previewUrl]);
 
@@ -192,11 +197,19 @@ export default function GeneratePage() {
       return;
     }
 
-    // Not enough credits → show the fixed blurred teaser. Never call the AI.
+    // Not enough credits → still play the 10s "generating" loader, then reveal
+    // the fixed default image (blurred). The AI is never called.
     if (tokens !== null && tokens < GENERATION_COST) {
-      setResultUrl(LOCKED_PLACEHOLDER);
-      setResultUnlocked(false);
-      setGenState("result");
+      setErrorMsg("");
+      setGenState("loading");
+      startFakeProgress();
+      revealTimer.current = setTimeout(() => {
+        stopProgress();
+        setProgress(100);
+        setResultUrl(LOCKED_PLACEHOLDER);
+        setResultUnlocked(false);
+        setGenState("result");
+      }, NO_CREDITS_LOADING_MS);
       return;
     }
 
@@ -249,6 +262,7 @@ export default function GeneratePage() {
 
   const handleNewGeneration = () => {
     stopProgress();
+    if (revealTimer.current) clearTimeout(revealTimer.current);
     setGenState("idle");
     setProgress(0);
     setPrompt("");

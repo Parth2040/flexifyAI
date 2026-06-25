@@ -185,6 +185,16 @@ function toObjectId(id: string): ObjectId | null {
   return ObjectId.isValid(id) ? new ObjectId(id) : null;
 }
 
+/** Find a user's id by email (used to attribute payments). */
+export async function getUserIdByEmail(email: string): Promise<string | null> {
+  const users = await getUsersCollection();
+  const doc = await users.findOne(
+    { email: email.toLowerCase() },
+    { projection: { _id: 1 } }
+  );
+  return doc?._id?.toString() ?? null;
+}
+
 /** Current token balance for a user id (0 if unknown). */
 export async function getUserTokens(userId: string): Promise<number> {
   const _id = toObjectId(userId);
