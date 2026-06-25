@@ -10,12 +10,12 @@ type GenerationState = "idle" | "loading" | "result" | "error";
 
 // Scene presets — selecting one fills the prompt that gets sent to the API.
 const SCENE_BUTTONS = [
-  { label: "Eiffel Tower", icon: "🗼", prompt: "In front of the Eiffel Tower at golden hour, wearing a tailored navy blazer, photorealistic." },
-  { label: "Statue of Liberty", icon: "🗽", prompt: "Standing in front of the Statue of Liberty in New York on a bright clear day, stylish outfit, photorealistic." },
   { label: "Supercar", icon: "🏎️", prompt: "Standing confidently next to a matte-black supercar on a coastal road at golden hour, cinematic lighting, ultra realistic." },
   { label: "Private Jet", icon: "✈️", prompt: "Boarding a private jet on the tarmac at sunset, stylish outfit, cinematic, ultra realistic." },
+  { label: "Helicopter", icon: "🚁", prompt: "Standing confidently in front of a private helicopter on a helipad with mountains in the background, luxury lifestyle outfit, bright daylight, ultra realistic, photorealistic." },
   { label: "Yacht", icon: "🛥️", prompt: "Relaxing on the deck of a luxury yacht in the Mediterranean, bright sunny day, ultra realistic." },
-  { label: "Colosseum", icon: "🏛️", prompt: "Standing in front of the Roman Colosseum in Italy at golden hour, smart casual outfit, photorealistic." },
+  { label: "Eiffel Tower", icon: "🗼", prompt: "In front of the Eiffel Tower at golden hour, wearing a tailored navy blazer, photorealistic." },
+  { label: "Statue of Liberty", icon: "🗽", prompt: "Standing in front of the Statue of Liberty in New York on a bright clear day, stylish outfit, photorealistic." },
   { label: "Swiss Alps", icon: "🏔️", prompt: "Standing on a viewpoint in the Swiss Alps with snowy peaks behind, warm winter outfit, photorealistic." },
 ];
 
@@ -43,6 +43,8 @@ export default function GeneratePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ w: number; h: number } | null>(null);
+  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
+  const [referencePreviews, setReferencePreviews] = useState<string[]>([]);
   const [prompt, setPrompt] = useState("");
   const [genState, setGenState] = useState<GenerationState>("idle");
   const [progress, setProgress] = useState(0);
@@ -52,6 +54,7 @@ export default function GeneratePage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [selectedScene, setSelectedScene] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const refImagesInput = useRef<HTMLInputElement>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -132,12 +135,39 @@ export default function GeneratePage() {
     if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
   };
 
+  // Optional extra reference images (e.g. a specific car/outfit to match).
+  const handleRefImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).filter((f) =>
+      ALLOWED_TYPES.includes(f.type)
+    );
+    if (files.length === 0) return;
+    setReferenceFiles((prev) => [...prev, ...files]);
+    setReferencePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+    if (refImagesInput.current) refImagesInput.current.value = "";
+  };
+
+  const removeRefImage = (index: number) => {
+    setReferencePreviews((prev) => {
+      const url = prev[index];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
+    setReferenceFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const clearReferenceImages = () => {
+    referencePreviews.forEach((u) => URL.revokeObjectURL(u));
+    setReferenceFiles([]);
+    setReferencePreviews([]);
+  };
+
   const removeImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedFile(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setImageDims(null);
+    clearReferenceImages();
     setGenState("idle");
     setProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -221,6 +251,7 @@ export default function GeneratePage() {
       const formData = new FormData();
       formData.append("image", selectedFile);
       formData.append("prompt", finalPrompt);
+      referenceFiles.forEach((f) => formData.append("referenceImages", f));
       if (imageDims) {
         formData.append("width", String(imageDims.w));
         formData.append("height", String(imageDims.h));
@@ -273,6 +304,7 @@ export default function GeneratePage() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setImageDims(null);
+    clearReferenceImages();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -499,8 +531,8 @@ export default function GeneratePage() {
               <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-2 text-neutral-200">
                 Import your photo
               </h1>
-              <p className="text-sm text-neutral-500 text-center mb-6">
-                Upload a clear photo of yourself, pick a scene or describe your own.
+              <p className="text-sm text-neutral-300 text-center mb-6">
+                Upload a clear, full photo of yourself to generate luxury lifestyle images.
               </p>
 
               {/* Upload Dropzone */}
@@ -543,8 +575,8 @@ export default function GeneratePage() {
                           <circle cx="12" cy="13" r="4" />
                         </svg>
                       </div>
-                      <p className="text-base font-sans font-bold text-[#e2a85c] mb-1">Click to upload</p>
-                      <p className="text-sm font-sans text-neutral-400 mb-6">or drag and drop your photo here</p>
+                      <p className="text-base font-sans font-bold text-[#e2a85c] mb-1">Drag your photo here</p>
+                      <p className="text-sm font-sans text-neutral-400 mb-6">or click to select</p>
                       <div className="flex gap-2.5">
                         {["JPG", "JPEG", "PNG"].map((ext) => (
                           <span key={ext} className="text-[10px] uppercase font-mono tracking-wider font-semibold text-neutral-500 bg-[#121418] border border-neutral-800 px-3 py-1 rounded-md">
@@ -557,8 +589,52 @@ export default function GeneratePage() {
                 )}
               </div>
 
+              {/* Choose reference images — optional extra images, shown after
+                  the user's own photo is uploaded. */}
+              {selectedFile && (
+                <div className="w-full mt-4">
+                  <input
+                    ref={refImagesInput}
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={handleRefImagesChange}
+                  />
+                  <button
+                    onClick={() => refImagesInput.current?.click()}
+                    className="flex items-center gap-2 text-sm font-semibold text-[#e2a85c] hover:text-[#d4994f] transition-colors cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                    Choose reference images
+                    <span className="text-xs font-normal text-neutral-500">(optional)</span>
+                  </button>
+
+                  {referencePreviews.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {referencePreviews.map((url, i) => (
+                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-neutral-800 group">
+                          <img src={url} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            onClick={() => removeRefImage(i)}
+                            aria-label="Remove reference image"
+                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-black text-white text-sm leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Scene Selection Buttons */}
-              <div className="w-full flex flex-wrap gap-2 mt-5">
+              <div className="w-full flex flex-wrap gap-2 mt-6">
                 {SCENE_BUTTONS.map((scene, index) => (
                   <button
                     key={scene.label}
@@ -586,8 +662,8 @@ export default function GeneratePage() {
                     setPrompt(e.target.value);
                     setSelectedScene(null);
                   }}
-                  placeholder="Standing in front of the Eiffel Tower at golden hour, wearing a tailored navy blazer…"
-                  className="bg-transparent text-white placeholder-neutral-600 outline-none text-sm w-full py-1 resize-none h-20 font-sans"
+                  placeholder="E.g. replace the car with a Lamborghini"
+                  className="bg-transparent text-white placeholder-neutral-600 outline-none text-sm w-full py-1 resize-none h-12 font-sans"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -597,12 +673,13 @@ export default function GeneratePage() {
                 />
 
                 <div className="flex justify-between items-center mt-2 border-t border-neutral-900/40 pt-3">
-                  <span className="text-[11px] font-mono text-neutral-600">
-                    {selectedFile ? "Photo ready" : "Upload a photo to start"}
+                  <span className={`text-[11px] font-mono ${selectedFile ? "text-green-500/80" : "text-neutral-600"}`}>
+                    {selectedFile ? "Photo ready" : "Upload your photo to start"}
                   </span>
                   <button
                     onClick={handleGenerate}
                     disabled={!selectedFile}
+                    title={selectedFile ? "Generate" : "Upload a reference photo first"}
                     className="bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/30 disabled:cursor-not-allowed text-black font-sans font-bold text-sm px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
                   >
                     Generate

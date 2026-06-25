@@ -76,9 +76,22 @@ export async function POST(request: Request) {
       const width = Number(form.get("width")) || 0;
       const height = Number(form.get("height")) || 0;
 
+      // Optional extra reference images (e.g. a specific car to match).
+      const referenceImages = form
+        .getAll("referenceImages")
+        .filter((f): f is File => f instanceof File && f.size > 0);
+
       const openaiForm = new FormData();
       openaiForm.append("model", "gpt-image-1");
-      openaiForm.append("image", image, image.name || "upload.png");
+      if (referenceImages.length > 0) {
+        // gpt-image-1 accepts multiple input images via `image[]`.
+        openaiForm.append("image[]", image, image.name || "self.png");
+        referenceImages.forEach((ref, i) =>
+          openaiForm.append("image[]", ref, ref.name || `ref-${i}.png`)
+        );
+      } else {
+        openaiForm.append("image", image, image.name || "upload.png");
+      }
       openaiForm.append("prompt", prompt);
       openaiForm.append("size", pickSize(width, height));
       openaiForm.append("quality", "medium");
