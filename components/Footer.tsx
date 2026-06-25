@@ -91,6 +91,18 @@ export default function Footer() {
               ))}
             </div>
 
+            <div className="mb-6">
+              <h4 className="font-mono text-xs text-mist uppercase tracking-wider mb-2">
+                Support
+              </h4>
+              <a
+                href="mailto:flexifyai321@gmail.com"
+                className="text-sm text-mist hover:text-gold transition-colors break-all"
+              >
+                flexifyai321@gmail.com
+              </a>
+            </div>
+
             <div className="space-y-1.5">
               <a
                 href="#"

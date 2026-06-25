@@ -34,22 +34,22 @@ export interface PolarPlan {
 
 export const PLANS: PolarPlan[] = [
   {
-    id: "weekly_basic",
-    name: "Weekly Pass — 100 Credits",
+    id: "starter",
+    name: "Starter — 100 Credits",
     tokens: 100,
-    productId: process.env.POLAR_PRODUCT_WEEKLY_BASIC,
+    productId: process.env.POLAR_PRODUCT_STARTER,
   },
   {
-    id: "weekly_pro",
-    name: "Pro Monthly — 500 Credits",
+    id: "pro",
+    name: "Pro — 500 Credits",
     tokens: 500,
-    productId: process.env.POLAR_PRODUCT_WEEKLY_PRO,
+    productId: process.env.POLAR_PRODUCT_PRO,
   },
   {
-    id: "annual",
-    name: "Pro Annual — 6,000 Credits",
+    id: "elite",
+    name: "Elite — 6,000 Credits",
     tokens: 6000,
-    productId: process.env.POLAR_PRODUCT_ANNUAL,
+    productId: process.env.POLAR_PRODUCT_ELITE,
   },
 ];
 

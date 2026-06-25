@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 /**
- * Polar redirects here after a successful checkout. The actual token credit
+ * Polar redirects here after a successful one-time purchase. The actual credit
  * happens via the webhook, which may lag a second or two — so we poll the
  * balance a couple of times.
  */
@@ -38,13 +38,13 @@ export default function PaymentSuccessPage() {
       </div>
       <h1 className="font-serif text-3xl font-semibold mb-2">Payment successful</h1>
       <p className="text-sm text-neutral-400 max-w-sm mb-6">
-        Thanks for subscribing! Your tokens are being added to your account.
+        Thanks for your purchase! Your credits are being added to your account.
       </p>
 
       <div className="flex items-center gap-2 text-[#e2a85c] bg-[#e2a85c]/10 border border-[#e2a85c]/30 px-4 py-2 rounded-full mb-8">
         <span>🪙</span>
         <span className="font-semibold">
-          {tokens === null ? "Updating balance…" : `${tokens.toLocaleString()} tokens`}
+          {tokens === null ? "Updating balance…" : `${tokens.toLocaleString()} credits`}
         </span>
       </div>
 

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const type = event.type ?? "";
     const data = event.data ?? {};
 
-    // Credit tokens when an order is paid (initial purchase and each renewal).
+    // Credit the buyer when their one-time order is paid.
     if (type === "order.paid") {
       const userId = data.metadata?.userId;
       const planId = data.metadata?.planId;
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         (productId ? getPlanByProductId(productId) : undefined);
 
       if (userId && plan) {
-        const balance = await addTokens(userId, plan.tokens);
+        const balance = await addTokens(userId, plan.tokens, `plan:${plan.id}`);
         console.log(
           `[polar] Credited ${plan.tokens} tokens to ${userId} (new balance ${balance})`
         );

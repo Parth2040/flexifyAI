@@ -140,7 +140,8 @@ export async function upsertGoogleUser(profile: {
         image: profile.picture ?? null,
         lastLoginAt: now,
       },
-      $setOnInsert: { createdAt: now },
+      // New users start with a stored credit balance of 0.
+      $setOnInsert: { createdAt: now, tokens: 0 },
     },
     { upsert: true }
   );
@@ -167,6 +168,7 @@ export async function upsertEmailUser(email: string): Promise<UserDoc> {
         provider: "email",
         name: normalized.split("@")[0],
         createdAt: now,
+        tokens: 0,
       },
     },
     { upsert: true }
@@ -193,7 +195,11 @@ export async function getUserTokens(userId: string): Promise<number> {
 }
 
 /** Credit tokens to a user (used by the Polar webhook). Returns new balance. */
-export async function addTokens(userId: string, amount: number): Promise<number> {
+export async function addTokens(
+  userId: string,
+  amount: number,
+  reason = "purchase"
+): Promise<number> {
   const _id = toObjectId(userId);
   if (!_id) throw new Error(`Invalid user id: ${userId}`);
   const users = await getUsersCollection();
@@ -202,16 +208,19 @@ export async function addTokens(userId: string, amount: number): Promise<number>
     { $inc: { tokens: amount } },
     { returnDocument: "after" }
   );
-  return res?.tokens ?? 0;
+  const balance = res?.tokens ?? 0;
+  await recordTransaction({ userId: _id, type: "purchase", amount, balanceAfter: balance, reason });
+  return balance;
 }
 
 /**
  * Atomically spend `amount` credits. Returns the new balance, or null if the
- * user didn't have enough (so callers can lock the result).
+ * user didn't have enough (so callers can lock the result). Records the usage.
  */
 export async function spendTokens(
   userId: string,
-  amount: number
+  amount: number,
+  reason = "image_generation"
 ): Promise<number | null> {
   const _id = toObjectId(userId);
   if (!_id) return null;
@@ -221,7 +230,67 @@ export async function spendTokens(
     { $inc: { tokens: -amount } },
     { returnDocument: "after" }
   );
-  return res ? res.tokens ?? 0 : null;
+  if (!res) return null;
+  const balance = res.tokens ?? 0;
+  await recordTransaction({ userId: _id, type: "spend", amount, balanceAfter: balance, reason });
+  return balance;
+}
+
+// ── Credit transaction history (ledger) ─────────────────────────────────────
+
+const TRANSACTIONS_COLLECTION = "credit_transactions";
+
+export interface CreditTransaction {
+  _id?: ObjectId;
+  userId: ObjectId;
+  /** "purchase" = credits added; "spend" = credits used. */
+  type: "purchase" | "spend";
+  /** Number of credits involved (always positive). */
+  amount: number;
+  /** User's balance immediately after this transaction. */
+  balanceAfter: number;
+  /** What it was for, e.g. "image_generation" or "plan:pro". */
+  reason: string;
+  createdAt: Date;
+}
+
+let txIndexEnsured = false;
+
+async function getTransactionsCollection(): Promise<Collection<CreditTransaction>> {
+  const client = await getMongoClient();
+  const col = client.db().collection<CreditTransaction>(TRANSACTIONS_COLLECTION);
+  if (!txIndexEnsured) {
+    try {
+      await col.createIndex({ userId: 1, createdAt: -1 });
+    } catch {
+      /* non-fatal */
+    }
+    txIndexEnsured = true;
+  }
+  return col;
+}
+
+/** Append one ledger entry. Best-effort: never breaks the credit operation. */
+async function recordTransaction(
+  entry: Omit<CreditTransaction, "_id" | "createdAt">
+): Promise<void> {
+  try {
+    const col = await getTransactionsCollection();
+    await col.insertOne({ ...entry, createdAt: new Date() } as CreditTransaction);
+  } catch (err) {
+    console.error("[credits] Failed to record transaction:", (err as Error).message);
+  }
+}
+
+/** Most recent credit transactions for a user (newest first). */
+export async function getUserTransactions(
+  userId: string,
+  limit = 50
+): Promise<CreditTransaction[]> {
+  const _id = toObjectId(userId);
+  if (!_id) return [];
+  const col = await getTransactionsCollection();
+  return col.find({ userId: _id }).sort({ createdAt: -1 }).limit(limit).toArray();
 }
 
 // ── Webhook idempotency ─────────────────────────────────────────────────────

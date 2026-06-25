@@ -7,58 +7,46 @@ import { useSession } from "@/hooks/useSession";
 
 const plans = [
   {
-    id: "weekly_basic",
-    name: "Weekly Pass",
+    id: "starter",
+    name: "Starter",
     price: "$4",
-    period: "/ week",
-    subPrice: "~$17.00 / month",
     credits: "100 Credits · 10 generations",
-    perGen: "$0.40 / generation",
     features: [
-      "AI image generation",
+      "High-quality lifestyle images",
       "Ultra-realistic output (4K)",
       "Very fast turnaround",
       "Access to every preset collection",
-      "24/7 support",
     ],
     highlighted: false,
     badge: null,
   },
   {
-    id: "weekly_pro",
-    name: "Pro Monthly",
+    id: "pro",
+    name: "Pro",
     price: "$10",
-    period: "/ month",
-    subPrice: "~$120.00 / year",
     credits: "500 Credits · 50 generations",
-    perGen: "$0.20 / generation",
     features: [
-      "AI image generation",
+      "High-quality lifestyle images",
       "Ultra-realistic output (4K)",
       "Very fast turnaround",
       "Access to every preset collection",
-      "24/7 support",
     ],
     highlighted: true,
     badge: "⭐ Most Popular",
   },
   {
-    id: "annual",
-    name: "Pro Annual",
+    id: "elite",
+    name: "Elite",
     price: "$80",
-    period: "/ year",
-    subPrice: "~$6.67 / month",
     credits: "6,000 Credits · 600 generations",
-    perGen: "$0.13 / generation",
     features: [
-      "AI image generation",
+      "High-quality lifestyle images",
       "Ultra-realistic output (4K)",
       "Very fast turnaround",
       "Access to every preset collection",
-      "24/7 support",
     ],
     highlighted: false,
-    badge: "🔥 Best Value",
+    badge: null,
   },
 ];
 
@@ -140,7 +128,7 @@ export default function Pricing() {
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          Full access either way. Cancel anytime. Payments handled securely by Polar.
+          One-time payment — no subscription. Secured by Polar.
         </motion.p>
 
         {/* Pricing Cards Grid */}
@@ -155,7 +143,7 @@ export default function Pricing() {
             <motion.div
               key={`${plan.name}-${plan.price}`}
               variants={cardVariants}
-              className={`relative rounded-3xl bg-[#0f1115] p-8 flex flex-col justify-between transition-all duration-300 min-h-[560px] ${plan.highlighted
+              className={`relative rounded-3xl bg-[#0f1115] p-8 flex flex-col transition-all duration-300 ${plan.highlighted
                 ? "border border-indigo-500/80 shadow-[0_0_40px_rgba(99,102,241,0.25)] ring-1 ring-indigo-500/50"
                 : "border border-neutral-900"
                 }`}
@@ -178,25 +166,14 @@ export default function Pricing() {
                   {plan.name}
                 </h3>
 
-                <div className="flex items-baseline gap-1.5 mb-1">
+                <div className="flex items-baseline gap-1.5 mb-4">
                   <span className="font-sans text-4xl sm:text-5xl font-bold text-white tracking-tight">
                     {plan.price}
                   </span>
-                  <span className="font-sans text-sm text-neutral-500">
-                    {plan.period}
-                  </span>
                 </div>
 
-                <p className="font-mono text-xs text-neutral-500 mb-4">
-                  {plan.subPrice}
-                </p>
-
-                <p className="font-sans text-sm text-neutral-300 leading-relaxed mb-1">
+                <p className="font-sans text-sm text-neutral-300 leading-relaxed mb-8">
                   {plan.credits}
-                </p>
-
-                <p className="font-mono text-xs text-gold/80 mb-8">
-                  {plan.perGen}
                 </p>
 
                 {/* Features List */}
