@@ -37,7 +37,7 @@ export default function BeforeAfterCompare({
   return (
     <div
       ref={containerRef}
-      className={`group relative overflow-hidden select-none cursor-ew-resize ${className}`}
+      className={`group relative overflow-hidden select-none cursor-ew-resize touch-pan-y ${className}`}
       onMouseEnter={() => setActive(true)}
       onMouseMove={(e) => updateFromClientX(e.clientX)}
       onMouseLeave={() => {
@@ -104,7 +104,8 @@ export default function BeforeAfterCompare({
           active ? "opacity-0" : "opacity-100"
         }`}
       >
-        Hover &amp; move to compare
+        <span className="hidden sm:inline">Hover &amp; move to compare</span>
+        <span className="sm:hidden">Drag to compare</span>
       </div>
     </div>
   );

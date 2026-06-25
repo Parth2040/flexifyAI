@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSession } from "@/lib/session";
 import { createCheckout, getPlanById } from "@/lib/polar";
+import { getOrigin } from "@/lib/url";
 
 /**
  * POST /api/payments/checkout
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unknown plan." }, { status: 400 });
     }
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const origin = getOrigin(request);
 
     const { checkoutUrl } = await createCheckout({
       plan,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, SESSION_MAX_AGE, signToken } from "@/lib/auth";
 import { upsertGoogleUser, toSessionUser } from "@/lib/models/user";
+import { getOrigin } from "@/lib/url";
 
 /**
  * GET /api/auth/google/callback
@@ -10,7 +11,7 @@ import { upsertGoogleUser, toSessionUser } from "@/lib/models/user";
  * user to the image generation page.
  */
 export async function GET(request: NextRequest) {
-  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+  const origin = getOrigin(request);
   const url = request.nextUrl;
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");

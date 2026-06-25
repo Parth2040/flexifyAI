@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import crypto from "crypto";
+import { getOrigin } from "@/lib/url";
 
 /**
  * GET /api/auth/google
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+  const origin = getOrigin(request);
   const redirectUri = `${origin}/api/auth/google/callback`;
   const state = crypto.randomBytes(16).toString("hex");
 

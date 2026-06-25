@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import CoinIcon from "@/components/CoinIcon";
 
 /**
  * Polar redirects here after a successful one-time purchase. The actual credit
@@ -42,7 +43,7 @@ export default function PaymentSuccessPage() {
       </p>
 
       <div className="flex items-center gap-2 text-[#e2a85c] bg-[#e2a85c]/10 border border-[#e2a85c]/30 px-4 py-2 rounded-full mb-8">
-        <span>🪙</span>
+        <CoinIcon className="w-4 h-4" />
         <span className="font-semibold">
           {tokens === null ? "Updating balance…" : `${tokens.toLocaleString()} credits`}
         </span>

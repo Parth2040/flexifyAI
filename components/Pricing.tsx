@@ -143,7 +143,7 @@ export default function Pricing() {
             <motion.div
               key={`${plan.name}-${plan.price}`}
               variants={cardVariants}
-              className={`relative rounded-3xl bg-[#0f1115] p-8 flex flex-col transition-all duration-300 ${plan.highlighted
+              className={`relative rounded-3xl bg-[#0f1115] p-6 sm:p-8 flex flex-col transition-all duration-300 ${plan.highlighted
                 ? "border border-indigo-500/80 shadow-[0_0_40px_rgba(99,102,241,0.25)] ring-1 ring-indigo-500/50"
                 : "border border-neutral-900"
                 }`}

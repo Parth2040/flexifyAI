@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { spendTokens, getUserTokens } from "@/lib/models/user";
+import { spendTokens, addTokens, getUserTokens } from "@/lib/models/user";
 import { CREDITS_PER_GENERATION } from "@/lib/polar";
 
 // gpt-image-1 supports square, landscape (3:2) and portrait (2:3). Pick the one
@@ -55,63 +55,73 @@ export async function POST(request: Request) {
       );
     }
 
-    // 4. Forward the photo + prompt to OpenAI's image edits endpoint.
-    //    Match the output aspect ratio to the upload, at medium quality.
-    const width = Number(form.get("width")) || 0;
-    const height = Number(form.get("height")) || 0;
-
-    const openaiForm = new FormData();
-    openaiForm.append("model", "gpt-image-1");
-    openaiForm.append("image", image, image.name || "upload.png");
-    openaiForm.append("prompt", prompt);
-    openaiForm.append("size", pickSize(width, height));
-    openaiForm.append("quality", "medium");
-    openaiForm.append("n", "1");
-
-    const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: openaiForm,
-    });
-
-    if (!openaiRes.ok) {
-      const detail = await openaiRes.text();
-      console.error("OpenAI image generation failed:", detail);
-      let message = "Image generation failed. Please try again.";
-      try {
-        const parsed = JSON.parse(detail);
-        if (parsed?.error?.message) message = parsed.error.message;
-      } catch {
-        /* keep default message */
-      }
-      return NextResponse.json({ error: message }, { status: 502 });
-    }
-
-    const data = (await openaiRes.json()) as {
-      data?: { b64_json?: string; url?: string }[];
-    };
-    const result = data.data?.[0];
-
-    const imageData = result?.b64_json
-      ? `data:image/png;base64,${result.b64_json}`
-      : result?.url;
-
-    if (!imageData) {
-      return NextResponse.json(
-        { error: "No image was returned. Please try again." },
-        { status: 502 }
-      );
-    }
-
-    // 5. Spend credits to unlock the result. If the user can't afford it, the
-    //    image comes back locked (the client shows a blurred preview + "Unlock").
+    // 4. Spend credits FIRST (atomic). If the user can't afford a generation we
+    //    never call OpenAI — the client shows a fixed blurred teaser instead.
     const newBalance = await spendTokens(session.id, CREDITS_PER_GENERATION);
     if (newBalance === null) {
       const tokens = await getUserTokens(session.id);
-      return NextResponse.json({ image: imageData, unlocked: false, tokens });
+      return NextResponse.json(
+        {
+          error: `You need at least ${CREDITS_PER_GENERATION} credits to generate.`,
+          insufficientCredits: true,
+          tokens,
+        },
+        { status: 402 }
+      );
     }
 
-    return NextResponse.json({ image: imageData, unlocked: true, tokens: newBalance });
+    // 5. Generate. If anything fails, refund the credits we just spent.
+    try {
+      // Match the output aspect ratio to the upload, at medium quality.
+      const width = Number(form.get("width")) || 0;
+      const height = Number(form.get("height")) || 0;
+
+      const openaiForm = new FormData();
+      openaiForm.append("model", "gpt-image-1");
+      openaiForm.append("image", image, image.name || "upload.png");
+      openaiForm.append("prompt", prompt);
+      openaiForm.append("size", pickSize(width, height));
+      openaiForm.append("quality", "medium");
+      openaiForm.append("n", "1");
+
+      const openaiRes = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: openaiForm,
+      });
+
+      if (!openaiRes.ok) {
+        const detail = await openaiRes.text();
+        console.error("OpenAI image generation failed:", detail);
+        let message = "Image generation failed. Please try again.";
+        try {
+          const parsed = JSON.parse(detail);
+          if (parsed?.error?.message) message = parsed.error.message;
+        } catch {
+          /* keep default message */
+        }
+        throw new Error(message);
+      }
+
+      const data = (await openaiRes.json()) as {
+        data?: { b64_json?: string; url?: string }[];
+      };
+      const result = data.data?.[0];
+      const imageData = result?.b64_json
+        ? `data:image/png;base64,${result.b64_json}`
+        : result?.url;
+
+      if (!imageData) throw new Error("No image was returned. Please try again.");
+
+      return NextResponse.json({ image: imageData, unlocked: true, tokens: newBalance });
+    } catch (genError) {
+      // Refund the credits since the generation didn't succeed.
+      const tokens = await addTokens(session.id, CREDITS_PER_GENERATION, "refund");
+      return NextResponse.json(
+        { error: (genError as Error).message || "Image generation failed.", tokens },
+        { status: 502 }
+      );
+    }
   } catch (error) {
     console.error("Generate route error:", error);
     return NextResponse.json(

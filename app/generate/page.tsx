@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "@/hooks/useSession";
+import CoinIcon from "@/components/CoinIcon";
 
 type GenerationState = "idle" | "loading" | "result" | "error";
 
@@ -21,12 +22,19 @@ const SCENE_BUTTONS = [
 // Reference image must be one of these formats.
 const ALLOWED_TYPES = ["image/jpeg", "image/png"]; // image/jpeg covers .jpg & .jpeg
 
-// Price shown on the locked result before redirecting to the pricing page.
-const UNLOCK_PRICE = "$7.99";
+// Price shown on the locked result — the cheapest plan (Starter).
+const UNLOCK_PRICE = "$4";
+
+// Credits each generation costs (mirrors CREDITS_PER_GENERATION on the server).
+const GENERATION_COST = 10;
+
+// Fixed teaser image shown (blurred) when the user can't afford a generation.
+// No AI is ever called in this case.
+const LOCKED_PLACEHOLDER = "/before-after/paris-after.jpg";
 
 export default function GeneratePage() {
   const router = useRouter();
-  const { isLoggedIn, loading: sessionLoading } = useSession();
+  const { isLoggedIn, loading: sessionLoading, logout } = useSession();
 
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -135,6 +143,12 @@ export default function GeneratePage() {
     router.push("/");
   };
 
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await logout();
+    router.push("/");
+  };
+
   // Unlock requires payment — send the user to the pricing section.
   const goToPricing = () => {
     router.push("/#pricing");
@@ -178,6 +192,14 @@ export default function GeneratePage() {
       return;
     }
 
+    // Not enough credits → show the fixed blurred teaser. Never call the AI.
+    if (tokens !== null && tokens < GENERATION_COST) {
+      setResultUrl(LOCKED_PLACEHOLDER);
+      setResultUnlocked(false);
+      setGenState("result");
+      return;
+    }
+
     setErrorMsg("");
     setGenState("loading");
     startFakeProgress();
@@ -196,7 +218,18 @@ export default function GeneratePage() {
 
       stopProgress();
 
+      // Server says not enough credits → fixed blurred teaser (no AI was used).
+      if (res.status === 402 || data.insufficientCredits) {
+        if (typeof data.tokens === "number") setTokens(data.tokens);
+        setResultUrl(LOCKED_PLACEHOLDER);
+        setResultUnlocked(false);
+        setProgress(100);
+        setTimeout(() => setGenState("result"), 300);
+        return;
+      }
+
       if (!res.ok) {
+        if (typeof data.tokens === "number") setTokens(data.tokens);
         setErrorMsg(data.error || "Image generation failed. Please try again.");
         setGenState("error");
         return;
@@ -239,25 +272,30 @@ export default function GeneratePage() {
       />
 
       {/* Top Header */}
-      <header className="w-full px-6 py-4 flex items-center justify-between border-b border-neutral-900/60 bg-neutral-950/30 backdrop-blur-md z-10">
+      <header className="w-full px-4 sm:px-6 py-4 flex items-center justify-between gap-2 border-b border-neutral-900/60 bg-neutral-950/30 backdrop-blur-md z-10">
         <a
           href="#"
           onClick={handleBackHome}
-          className="font-serif text-lg font-semibold tracking-tight text-neutral-300 hover:text-white transition-colors"
+          className="font-serif text-base sm:text-lg font-semibold tracking-tight text-neutral-300 hover:text-white transition-colors shrink-0"
         >
           flexify ai
         </a>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-4">
+          {/* Credits — click to see balance & full transaction history */}
           <button
-            onClick={goToPricing}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#e2a85c] bg-[#e2a85c]/10 border border-[#e2a85c]/30 hover:bg-[#e2a85c]/20 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
-            title="Buy more tokens"
+            onClick={() => router.push("/account")}
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#e2a85c] bg-[#e2a85c]/10 border border-[#e2a85c]/30 hover:bg-[#e2a85c]/20 px-2.5 sm:px-3 py-1.5 rounded-full transition-colors cursor-pointer whitespace-nowrap"
+            title="View credits & transaction history"
           >
-            <span>🪙</span>
-            <span>{tokens === null ? "…" : tokens.toLocaleString()} tokens</span>
+            <CoinIcon className="w-3.5 h-3.5" />
+            <span>{(tokens ?? 0).toLocaleString()} credits</span>
           </button>
-          <button onClick={handleBackHome} className="text-xs font-medium text-neutral-400 hover:text-white transition-colors">
+          <button onClick={handleBackHome} className="text-xs font-medium text-neutral-400 hover:text-white transition-colors hidden sm:inline">
             Home
+          </button>
+          <span className="text-neutral-800 hidden sm:inline">|</span>
+          <button onClick={handleLogout} className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors cursor-pointer whitespace-nowrap">
+            Log out
           </button>
         </div>
       </header>
