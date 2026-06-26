@@ -8,17 +8,6 @@ import CoinIcon from "@/components/CoinIcon";
 
 type GenerationState = "idle" | "loading" | "result" | "error";
 
-// Scene presets — selecting one fills the prompt that gets sent to the API.
-const SCENE_BUTTONS = [
-  { label: "Supercar", icon: "🏎️", prompt: "Standing confidently next to a matte-black supercar on a coastal road at golden hour, cinematic lighting, ultra realistic." },
-  { label: "Private Jet", icon: "✈️", prompt: "Boarding a private jet on the tarmac at sunset, stylish outfit, cinematic, ultra realistic." },
-  { label: "Helicopter", icon: "🚁", prompt: "Standing confidently in front of a private helicopter on a helipad with mountains in the background, luxury lifestyle outfit, bright daylight, ultra realistic, photorealistic." },
-  { label: "Yacht", icon: "🛥️", prompt: "Relaxing on the deck of a luxury yacht in the Mediterranean, bright sunny day, ultra realistic." },
-  { label: "Eiffel Tower", icon: "🗼", prompt: "In front of the Eiffel Tower at golden hour, wearing a tailored navy blazer, photorealistic." },
-  { label: "Statue of Liberty", icon: "🗽", prompt: "Standing in front of the Statue of Liberty in New York on a bright clear day, stylish outfit, photorealistic." },
-  { label: "Swiss Alps", icon: "🏔️", prompt: "Standing on a viewpoint in the Swiss Alps with snowy peaks behind, warm winter outfit, photorealistic." },
-];
-
 // Reference image must be one of these formats.
 const ALLOWED_TYPES = ["image/jpeg", "image/png"]; // image/jpeg covers .jpg & .jpeg
 
@@ -52,7 +41,7 @@ export default function GeneratePage() {
   const [resultUnlocked, setResultUnlocked] = useState(false);
   const [tokens, setTokens] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
-  const [selectedScene, setSelectedScene] = useState<number | null>(null);
+  const [alertMsg, setAlertMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refImagesInput = useRef<HTMLInputElement>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -189,16 +178,6 @@ export default function GeneratePage() {
     router.push("/#pricing");
   };
 
-  // Pick a scene preset: toggles selection and fills the prompt.
-  const handleSceneSelect = (index: number) => {
-    if (selectedScene === index) {
-      setSelectedScene(null);
-    } else {
-      setSelectedScene(index);
-      setPrompt(SCENE_BUTTONS[index].prompt);
-    }
-  };
-
   const startFakeProgress = () => {
     setProgress(0);
     progressTimer.current = setInterval(() => {
@@ -215,17 +194,17 @@ export default function GeneratePage() {
   };
 
   const handleGenerate = async () => {
-    if (!selectedFile) {
-      setErrorMsg("Please upload a photo first.");
-      setGenState("error");
-      return;
-    }
+    // All three are required: your photo, at least one reference image, a prompt.
     const finalPrompt = prompt.trim();
-    if (!finalPrompt) {
-      setErrorMsg("Describe the scene you want, or pick one below.");
-      setGenState("error");
+    const missing: string[] = [];
+    if (!selectedFile) missing.push("your photo");
+    if (referenceFiles.length === 0) missing.push("a reference image");
+    if (!finalPrompt) missing.push("a prompt");
+    if (!selectedFile || missing.length > 0) {
+      setAlertMsg(`Please provide ${missing.join(", ")} before generating.`);
       return;
     }
+    setAlertMsg("");
 
     // Not enough credits → still play the 10s "generating" loader, then reveal
     // the fixed default image (blurred). The AI is never called.
@@ -297,10 +276,10 @@ export default function GeneratePage() {
     setGenState("idle");
     setProgress(0);
     setPrompt("");
-    setSelectedScene(null);
     setSelectedFile(null);
     setResultUrl(null);
     setErrorMsg("");
+    setAlertMsg("");
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setImageDims(null);
@@ -528,6 +507,25 @@ export default function GeneratePage() {
               exit={{ opacity: 0 }}
               className="w-full flex flex-col items-center"
             >
+              {/* Validation alert — which required item is missing */}
+              {alertMsg && (
+                <div className="w-full flex items-start gap-2.5 bg-red-950/40 border border-red-900/60 text-red-300 rounded-xl px-4 py-3 mb-4">
+                  <svg className="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span className="text-sm font-medium">{alertMsg}</span>
+                  <button
+                    onClick={() => setAlertMsg("")}
+                    aria-label="Dismiss"
+                    className="ml-auto text-red-400/70 hover:text-red-300 cursor-pointer text-lg leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
               <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-center mb-2 text-neutral-200">
                 Import your photo
               </h1>
@@ -589,10 +587,8 @@ export default function GeneratePage() {
                 )}
               </div>
 
-              {/* Choose reference images — optional extra images, shown after
-                  the user's own photo is uploaded. */}
-              {selectedFile && (
-                <div className="w-full mt-4">
+              {/* Choose reference images — required, always visible. */}
+              <div className="w-full mt-4 flex flex-col items-center">
                   <input
                     ref={refImagesInput}
                     type="file"
@@ -611,7 +607,7 @@ export default function GeneratePage() {
                       <path d="M21 15l-5-5L5 21" />
                     </svg>
                     Choose reference images
-                    <span className="text-xs font-normal text-neutral-500">(optional)</span>
+                    <span className="text-xs font-normal text-[#e2a85c]/70">(required)</span>
                   </button>
 
                   {referencePreviews.length > 0 && (
@@ -631,58 +627,32 @@ export default function GeneratePage() {
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Scene Selection Buttons */}
-              <div className="w-full flex flex-wrap gap-2 mt-6">
-                {SCENE_BUTTONS.map((scene, index) => (
-                  <button
-                    key={scene.label}
-                    onClick={() => handleSceneSelect(index)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-semibold font-sans transition-all duration-200 cursor-pointer border ${
-                      selectedScene === index
-                        ? "bg-[#e2a85c]/15 border-[#e2a85c] text-[#e2a85c] shadow-[0_0_16px_rgba(226,168,92,0.2)]"
-                        : "bg-[#0f1115] border-neutral-800 text-neutral-400 hover:border-[#856a42] hover:text-neutral-300 hover:bg-[#131620]"
-                    }`}
-                  >
-                    <span>{scene.icon}</span>
-                    <span>{scene.label}</span>
-                  </button>
-                ))}
-              </div>
 
               {/* Describe Your Scene card */}
-              <div className="w-full bg-[#0c0e11] border border-neutral-900 rounded-2xl p-5 mt-6 shadow-2xl flex flex-col gap-3">
-                <label className="text-[10px] uppercase font-mono tracking-wider font-bold text-neutral-500 block">
-                  DESCRIBE YOUR SCENE
-                </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => {
-                    setPrompt(e.target.value);
-                    setSelectedScene(null);
-                  }}
-                  placeholder="E.g. replace the car with a Lamborghini"
-                  className="bg-transparent text-white placeholder-neutral-600 outline-none text-sm w-full py-1 resize-none h-12 font-sans"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                />
-
-                <div className="flex justify-between items-center mt-2 border-t border-neutral-900/40 pt-3">
-                  <span className={`text-[11px] font-mono ${selectedFile ? "text-green-500/80" : "text-neutral-600"}`}>
-                    {selectedFile ? "Photo ready" : "Upload your photo to start"}
-                  </span>
+              <div className="w-full bg-[#0c0e11] border border-neutral-800 rounded-2xl p-4 mt-6 shadow-2xl">
+                <div className="flex items-start gap-2">
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="E.g. replace the car with a Lamborghini"
+                    className="flex-1 bg-transparent text-white placeholder-neutral-500 outline-none text-sm py-1 resize-none h-16 font-sans"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleGenerate();
+                      }
+                    }}
+                  />
                   <button
                     onClick={handleGenerate}
                     disabled={!selectedFile}
-                    title={selectedFile ? "Generate" : "Upload a reference photo first"}
-                    className="bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/30 disabled:cursor-not-allowed text-black font-sans font-bold text-sm px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                    title={selectedFile ? "Generate" : "Upload your photo first"}
+                    aria-label="Generate"
+                    className="shrink-0 w-9 h-9 rounded-full bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/25 disabled:cursor-not-allowed text-black flex items-center justify-center transition-all shadow-md cursor-pointer"
                   >
-                    Generate
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 19V5M5 12l7-7 7 7" />
+                    </svg>
                   </button>
                 </div>
               </div>
