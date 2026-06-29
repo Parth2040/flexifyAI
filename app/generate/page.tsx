@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "@/hooks/useSession";
 import CoinIcon from "@/components/CoinIcon";
+import { REFERENCE_IMAGES } from "@/lib/references";
 
 type GenerationState = "idle" | "loading" | "result" | "error";
 
@@ -32,8 +33,10 @@ export default function GeneratePage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<{ w: number; h: number } | null>(null);
-  const [referenceFiles, setReferenceFiles] = useState<File[]>([]);
-  const [referencePreviews, setReferencePreviews] = useState<string[]>([]);
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [showReferences, setShowReferences] = useState(false);
+  const [brokenRefs, setBrokenRefs] = useState<string[]>([]);
   const [prompt, setPrompt] = useState("");
   const [genState, setGenState] = useState<GenerationState>("idle");
   const [progress, setProgress] = useState(0);
@@ -124,30 +127,49 @@ export default function GeneratePage() {
     if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
   };
 
-  // Optional extra reference images (e.g. a specific car/outfit to match).
-  const handleRefImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []).filter((f) =>
-      ALLOWED_TYPES.includes(f.type)
-    );
-    if (files.length === 0) return;
-    setReferenceFiles((prev) => [...prev, ...files]);
-    setReferencePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+  // The single reference image — either uploaded from PC or picked from ours.
+  const setReference = (file: File, preview: string) => {
+    if (referencePreview && referencePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(referencePreview);
+    }
+    setReferenceFile(file);
+    setReferencePreview(preview);
+  };
+
+  const handleReferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !ALLOWED_TYPES.includes(file.type)) return;
+    setReference(file, URL.createObjectURL(file));
     if (refImagesInput.current) refImagesInput.current.value = "";
   };
 
-  const removeRefImage = (index: number) => {
-    setReferencePreviews((prev) => {
-      const url = prev[index];
-      if (url) URL.revokeObjectURL(url);
-      return prev.filter((_, i) => i !== index);
-    });
-    setReferenceFiles((prev) => prev.filter((_, i) => i !== index));
+  // Pick one of the predefined references — fetch it as a File so it goes to the
+  // API exactly like an uploaded reference image. Replaces any current pick.
+  const selectPredefinedReference = async (src: string) => {
+    if (referencePreview === src) {
+      clearReference(); // tapping the selected one deselects it
+      return;
+    }
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      // Give the File an extension matching its real type (e.g. .jfif → .jpg)
+      // so the OpenAI edits endpoint accepts it.
+      const type = blob.type || "image/jpeg";
+      const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+      const file = new File([blob], `reference.${ext}`, { type });
+      setReference(file, src);
+    } catch {
+      /* ignore */
+    }
   };
 
-  const clearReferenceImages = () => {
-    referencePreviews.forEach((u) => URL.revokeObjectURL(u));
-    setReferenceFiles([]);
-    setReferencePreviews([]);
+  const clearReference = () => {
+    if (referencePreview && referencePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(referencePreview);
+    }
+    setReferenceFile(null);
+    setReferencePreview(null);
   };
 
   const removeImage = (e: React.MouseEvent) => {
@@ -156,7 +178,6 @@ export default function GeneratePage() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setImageDims(null);
-    clearReferenceImages();
     setGenState("idle");
     setProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -198,7 +219,7 @@ export default function GeneratePage() {
     const finalPrompt = prompt.trim();
     const missing: string[] = [];
     if (!selectedFile) missing.push("your photo");
-    if (referenceFiles.length === 0) missing.push("a reference image");
+    if (!referenceFile) missing.push("a reference image");
     if (!finalPrompt) missing.push("a prompt");
     if (!selectedFile || missing.length > 0) {
       setAlertMsg(`Please provide ${missing.join(", ")} before generating.`);
@@ -230,7 +251,7 @@ export default function GeneratePage() {
       const formData = new FormData();
       formData.append("image", selectedFile);
       formData.append("prompt", finalPrompt);
-      referenceFiles.forEach((f) => formData.append("referenceImages", f));
+      if (referenceFile) formData.append("referenceImages", referenceFile);
       if (imageDims) {
         formData.append("width", String(imageDims.w));
         formData.append("height", String(imageDims.h));
@@ -283,7 +304,7 @@ export default function GeneratePage() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setImageDims(null);
-    clearReferenceImages();
+    clearReference();
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -587,15 +608,14 @@ export default function GeneratePage() {
                 )}
               </div>
 
-              {/* Choose reference images — required, always visible. */}
+              {/* Choose ONE reference image — upload one or pick one of ours. */}
               <div className="w-full mt-4 flex flex-col items-center">
                   <input
                     ref={refImagesInput}
                     type="file"
-                    multiple
                     accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                     className="hidden"
-                    onChange={handleRefImagesChange}
+                    onChange={handleReferenceChange}
                   />
                   <button
                     onClick={() => refImagesInput.current?.click()}
@@ -606,25 +626,33 @@ export default function GeneratePage() {
                       <circle cx="8.5" cy="8.5" r="1.5" />
                       <path d="M21 15l-5-5L5 21" />
                     </svg>
-                    Choose reference images
-                    <span className="text-xs font-normal text-[#e2a85c]/70">(required)</span>
+                    Choose a reference image
+                    <span className="text-xs font-normal text-[#e2a85c]/70">(required, pick one)</span>
                   </button>
 
-                  {referencePreviews.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {referencePreviews.map((url, i) => (
-                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-neutral-800 group">
-                          <img src={url} alt={`Reference ${i + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            onClick={() => removeRefImage(i)}
-                            aria-label="Remove reference image"
-                            className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-black text-white text-sm leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                  {/* Selected reference preview (single) */}
+                  {referencePreview && (
+                    <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-[#e2a85c] mt-3 group">
+                      <img src={referencePreview} alt="Selected reference" className="w-full h-full object-cover" />
+                      <button
+                        onClick={clearReference}
+                        aria-label="Remove reference image"
+                        className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-black text-white text-sm leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        ×
+                      </button>
                     </div>
+                  )}
+
+                  {/* Browse references — opens a full-screen picker (only when the folder has any) */}
+                  {REFERENCE_IMAGES.length > 0 && (
+                    <button
+                      onClick={() => setShowReferences(true)}
+                      className="text-xs font-medium text-neutral-400 hover:text-neutral-200 transition-colors mt-3 cursor-pointer"
+                    >
+                      Browse references
+                      <span className="text-neutral-600"> — or pick one of ours</span>
+                    </button>
                   )}
                 </div>
 
@@ -665,6 +693,65 @@ export default function GeneratePage() {
       <footer className="w-full text-center py-6 text-[10px] font-mono text-neutral-600 border-t border-neutral-950/20 z-10">
         &copy; {new Date().getFullYear()} flexify ai. All rights reserved.
       </footer>
+
+      {/* ── Reference picker (full-screen) ── */}
+      {showReferences && (
+        <div className="fixed inset-0 z-50 bg-[#07080b] flex flex-col">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-neutral-900/60 bg-neutral-950/40 backdrop-blur-md">
+            <div>
+              <h2 className="font-serif text-lg font-semibold text-neutral-200">Choose a reference image</h2>
+              <p className="text-xs text-neutral-500">Tap one to use it, then you&apos;ll return to create.</p>
+            </div>
+            <button
+              onClick={() => setShowReferences(false)}
+              className="flex items-center gap-1.5 text-sm font-medium text-neutral-400 hover:text-white bg-neutral-900/60 border border-neutral-800 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-w-5xl mx-auto">
+              {REFERENCE_IMAGES.filter((src) => !brokenRefs.includes(src)).map((src) => {
+                const selected = referencePreview === src;
+                return (
+                  <button
+                    key={src}
+                    onClick={() => {
+                      selectPredefinedReference(src);
+                      setShowReferences(false);
+                    }}
+                    className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                      selected
+                        ? "border-[#e2a85c] ring-2 ring-[#e2a85c]/40"
+                        : "border-neutral-800 hover:border-[#856a42]"
+                    }`}
+                  >
+                    <img
+                      src={src}
+                      alt="Reference"
+                      className="w-full h-full object-cover"
+                      onError={() => setBrokenRefs((p) => [...p, src])}
+                    />
+                    {selected && (
+                      <div className="absolute inset-0 bg-[#e2a85c]/25 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full bg-[#e2a85c] text-black flex items-center justify-center">
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes shimmer {
