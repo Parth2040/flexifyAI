@@ -1,26 +1,26 @@
 "use client";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Blog", href: "/blog" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 const socialIcons = [
   {
     label: "Instagram",
-    href: "#",
-    path: "M7.5 2h9A5.5 5.5 0 0122 7.5v9a5.5 5.5 0 01-5.5 5.5h-9A5.5 5.5 0 012 16.5v-9A5.5 5.5 0 017.5 2zM12 8a4 4 0 100 8 4 4 0 000-8zm5.5-1.5a1 1 0 100-2 1 1 0 000 2z",
+    href: "https://www.instagram.com/_flexify_ai/",
+    paths: [
+      "M7.5 2h9A5.5 5.5 0 0122 7.5v9a5.5 5.5 0 01-5.5 5.5h-9A5.5 5.5 0 012 16.5v-9A5.5 5.5 0 017.5 2zM12 8a4 4 0 100 8 4 4 0 000-8zm5.5-1.5a1 1 0 100-2 1 1 0 000 2z",
+    ],
   },
   {
-    label: "TikTok",
-    href: "#",
-    path: "M9 3h3.5a4.5 4.5 0 004.5 4.5V11a8 8 0 01-4.5-1.5V16a5 5 0 11-5-5h1v3.5A1.5 1.5 0 1010.5 16V3H9z",
-  },
-  {
-    label: "X (Twitter)",
-    href: "#",
-    path: "M3 3l7.07 9.41L3 21h1.68l5.63-6.82L15 21h6l-7.44-9.91L20 3h-1.68l-5.27 6.39L9 3H3zm2.5 1.5h2.4l8.1 12h-2.4l-8.1-12z",
+    label: "YouTube",
+    href: "https://www.youtube.com/@flexify-r1b",
+    paths: [
+      "M2.5 17a24.12 24.12 0 010-10 2 2 0 011.4-1.4 49.56 49.56 0 0116.2 0A2 2 0 0121.5 7a24.12 24.12 0 010 10 2 2 0 01-1.4 1.4 49.55 49.55 0 01-16.2 0A2 2 0 012.5 17",
+      "M10 9l5 3-5 3z",
+    ],
   },
 ];
 
@@ -32,7 +32,7 @@ export default function Footer() {
           {/* Logo & tagline */}
           <div>
             <a
-              href="#"
+              href="/"
               className="font-serif text-xl font-semibold text-parchment hover:text-gold transition-colors"
             >
               flexify ai
@@ -72,6 +72,8 @@ export default function Footer() {
                 <a
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={social.label}
                   className="w-9 h-9 rounded-lg bg-gold/10 flex items-center justify-center text-mist hover:text-gold hover:bg-gold/20 transition-all"
                 >
@@ -85,7 +87,9 @@ export default function Footer() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <path d={social.path} />
+                    {social.paths.map((d, i) => (
+                      <path key={i} d={d} />
+                    ))}
                   </svg>
                 </a>
               ))}
