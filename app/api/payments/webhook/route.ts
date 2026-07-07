@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyWebhookSignature, getPlanById, getPlanByProductId } from "@/lib/polar";
 import { addTokens, markEventProcessed, getUserIdByEmail } from "@/lib/models/user";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 /**
  * POST /api/payments/webhook
@@ -69,16 +70,25 @@ export async function POST(request: NextRequest) {
         (productId ? getPlanByProductId(productId) : undefined);
 
       // Attribute to a user: metadata.userId first, else by customer email.
+      const email = data.customer?.email ?? data.customer_email;
       let userId: string | undefined = metadata.userId;
-      if (!userId) {
-        const email = data.customer?.email ?? data.customer_email;
-        if (email) userId = (await getUserIdByEmail(email)) ?? undefined;
+      if (!userId && email) {
+        userId = (await getUserIdByEmail(email)) ?? undefined;
       }
 
       if (userId && plan) {
         const balance = await addTokens(userId, plan.tokens, `plan:${plan.id}`);
         console.log(
           `[polar] ${type} → credited ${plan.tokens} to ${userId} (balance ${balance})`
+        );
+
+        // Fire a Telegram notification (best-effort).
+        await sendTelegramMessage(
+          `💰 <b>New Flexify AI payment</b>\n` +
+            `Plan: <b>${plan.name}</b>\n` +
+            `Credits: <b>+${plan.tokens.toLocaleString()}</b>\n` +
+            `Customer: ${email ?? userId}\n` +
+            `New balance: ${balance.toLocaleString()}`
         );
       } else {
         console.warn("[polar] could not attribute order:", {
