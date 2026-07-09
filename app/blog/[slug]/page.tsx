@@ -56,6 +56,19 @@ export default async function BlogPostPage({
           {post.title}
         </h1>
 
+        {post.images && post.images.length > 0 && (
+          <div className="grid grid-cols-2 gap-3 md:gap-4 mb-10">
+            {post.images.map((src, i) => (
+              <img
+                key={src}
+                src={src}
+                alt={`${post.title} ${i + 1}`}
+                className="w-full h-auto rounded-2xl border border-gold/10 object-cover"
+              />
+            ))}
+          </div>
+        )}
+
         <BlogContent content={post.content} />
 
         <div className="mt-14 pt-8 border-t border-gold/10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
