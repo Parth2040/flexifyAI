@@ -3,6 +3,12 @@ import { getSession } from "@/lib/session";
 import { spendTokens, addTokens, getUserTokens } from "@/lib/models/user";
 import { CREDITS_PER_GENERATION } from "@/lib/polar";
 
+// Sent with every generation regardless of what the user types. The user's own
+// prompt (if any) is appended after it. Image 1 = the user's uploaded photo
+// (identity), Image 2 = the reference image (scene/setting) — see image[] order below.
+const MASTER_PROMPT =
+  "Replace the person in Image 2 with the person from Image 1, keeping Image 2's setting and lighting. Preserve Image 1's face structure and identity exactly — no beautification or skin smoothing — but render them with a natural, genuine smile, regardless of their expression in Image 1. Do not copy the outfit from either image — dress the person in attire that fits the scene's luxury setting and mood. Match face lighting direction and color to the scene. Keep real skin texture (pores, natural shine) and slight phone-camera grain — no airbrushing, no studio look. Avoid: plastic skin, mismatched lighting, extra fingers, warped hands, glossy AI look, forced or unnatural smile.";
+
 // gpt-image-1 supports square, landscape (3:2) and portrait (2:3). Pick the one
 // closest to the uploaded image so the result keeps roughly the same shape.
 function pickSize(width: number, height: number): string {
@@ -21,7 +27,8 @@ function pickSize(width: number, height: number): string {
  *
  * Expects multipart/form-data with fields:
  *   - image: the uploaded photo (File)
- *   - prompt: the scene description (string)
+ *   - prompt: the scene description (string, optional — the master prompt is
+ *     always sent; this is appended to it when present)
  */
 export async function POST(request: Request) {
   // 1. Require an authenticated user.
@@ -43,7 +50,8 @@ export async function POST(request: Request) {
     // 3. Read and validate the incoming form data.
     const form = await request.formData();
     const image = form.get("image");
-    const prompt = (form.get("prompt") as string | null)?.trim();
+    const userPrompt = (form.get("prompt") as string | null)?.trim();
+    const prompt = [MASTER_PROMPT, userPrompt].filter(Boolean).join("\n\n");
 
     if (!(image instanceof File) || image.size === 0) {
       return NextResponse.json({ error: "Please upload a photo." }, { status: 400 });

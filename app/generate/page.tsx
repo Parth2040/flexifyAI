@@ -215,12 +215,11 @@ export default function GeneratePage() {
   };
 
   const handleGenerate = async () => {
-    // All three are required: your photo, at least one reference image, a prompt.
+    // Required: your photo and a reference image. The prompt is optional.
     const finalPrompt = prompt.trim();
     const missing: string[] = [];
     if (!selectedFile) missing.push("your photo");
     if (!referenceFile) missing.push("a reference image");
-    if (!finalPrompt) missing.push("a prompt");
     if (!selectedFile || missing.length > 0) {
       setAlertMsg(`Please provide ${missing.join(", ")} before generating.`);
       return;
@@ -662,7 +661,7 @@ export default function GeneratePage() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="E.g. replace the car with a Lamborghini"
+                    placeholder="E.g. replace the car with a Lamborghini (optional)"
                     className="flex-1 bg-transparent text-white placeholder-neutral-500 outline-none text-sm py-1 resize-none h-16 font-sans"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
