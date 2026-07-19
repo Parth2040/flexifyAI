@@ -2,8 +2,8 @@
 
 /* ── Design Tokens ── */
 :root {
-  --ink: #0A0C10;
-  --panel: #15181F;
+  --ink: #131313;
+  --panel: #222222;
   --gold: #D7AD66;
   --parchment: #F3ECDD;
   --rust: #B5563C;

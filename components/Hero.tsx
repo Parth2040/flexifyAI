@@ -102,7 +102,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.9, delay: 0.3, ease }}
           >
-            <div className="w-full max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#0c0e12] border border-white/[0.06] shadow-2xl shadow-black/60">
+            <div className="w-full max-w-lg lg:max-w-xl rounded-2xl overflow-hidden bg-[#161616] border border-white/[0.06] shadow-2xl shadow-black/60">
               <BeforeAfterCompare
                 beforeImage="/before-after/paris-before.jpg"
                 afterImage="/before-after/paris-after.jpg"

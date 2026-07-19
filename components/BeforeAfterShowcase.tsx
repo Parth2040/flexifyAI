@@ -64,7 +64,7 @@ export default function BeforeAfterShowcase() {
                 key={idx}
                 className="w-[260px] sm:w-[300px] md:w-[320px] shrink-0"
               >
-                <div className="rounded-2xl overflow-hidden bg-[#0c0e12] border border-white/[0.06] shadow-xl">
+                <div className="rounded-2xl overflow-hidden bg-[#161616] border border-white/[0.06] shadow-xl">
                   <BeforeAfterSlider
                     beforeLabel="Your Photo"
                     afterLabel={dest.label}

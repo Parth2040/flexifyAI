@@ -63,14 +63,14 @@ export default function AccountPage() {
 
   if (sessionLoading || !isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#07080b] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#07080b] text-white flex flex-col">
+    <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col">
       {/* Header */}
       <header className="w-full px-6 py-4 flex items-center justify-between border-b border-neutral-900/60 bg-neutral-950/30 backdrop-blur-md">
         <button
@@ -117,7 +117,7 @@ export default function AccountPage() {
             <div className="w-8 h-8 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="text-center py-12 rounded-2xl border border-neutral-900 bg-[#0c0e11]">
+          <div className="text-center py-12 rounded-2xl border border-neutral-900 bg-[#151515]">
             <p className="text-sm text-neutral-500">No transactions yet.</p>
             <p className="text-xs text-neutral-600 mt-1">
               Buy credits or generate an image and it&apos;ll show up here.
@@ -130,7 +130,7 @@ export default function AccountPage() {
               return (
                 <li
                   key={t.id}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-neutral-900 bg-[#0c0e11] px-4 py-3.5"
+                  className="flex items-center justify-between gap-4 rounded-xl border border-neutral-900 bg-[#151515] px-4 py-3.5"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div

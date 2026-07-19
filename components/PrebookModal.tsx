@@ -110,7 +110,7 @@ export default function PrebookModal({ isOpen, onClose }: PrebookModalProps) {
 
       {/* Card Container */}
       <div
-        className="relative w-full max-w-[420px] bg-[#0c0e12] border border-white/[0.06] rounded-2xl p-6 md:p-8 shadow-2xl z-10 flex flex-col gap-5"
+        className="relative w-full max-w-[420px] bg-[#161616] border border-white/[0.06] rounded-2xl p-6 md:p-8 shadow-2xl z-10 flex flex-col gap-5"
       >
         {/* Close Button */}
         <button
@@ -163,7 +163,7 @@ export default function PrebookModal({ isOpen, onClose }: PrebookModalProps) {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your name"
                   disabled={isSubmitting}
-                  className="w-full bg-[#121417] hover:bg-[#15181c] border border-neutral-800 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-[#1d1d1d] hover:bg-[#212121] border border-neutral-800 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
                 />
               </div>
 
@@ -179,7 +179,7 @@ export default function PrebookModal({ isOpen, onClose }: PrebookModalProps) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   disabled={isSubmitting}
-                  className="w-full bg-[#121417] hover:bg-[#15181c] border border-neutral-800 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-[#1d1d1d] hover:bg-[#212121] border border-neutral-800 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
                 />
               </div>
 

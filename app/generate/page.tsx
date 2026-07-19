@@ -79,7 +79,7 @@ export default function GeneratePage() {
 
   if (sessionLoading || !isLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#07080b] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
       </div>
     );
@@ -215,11 +215,10 @@ export default function GeneratePage() {
   };
 
   const handleGenerate = async () => {
-    // All three are required: your photo, a reference image, and a prompt.
+    // Required: your photo and a prompt. The reference image is optional.
     const finalPrompt = prompt.trim();
     const missing: string[] = [];
     if (!selectedFile) missing.push("your photo");
-    if (!referenceFile) missing.push("a reference image");
     if (!finalPrompt) missing.push("a prompt");
     if (!selectedFile || missing.length > 0) {
       setAlertMsg(`Please provide ${missing.join(", ")} before generating.`);
@@ -309,7 +308,7 @@ export default function GeneratePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07080b] text-white flex flex-col justify-between overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col justify-between overflow-x-hidden relative">
       {/* Ambient glow */}
       <div
         className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] blur-[140px] opacity-60"
@@ -358,7 +357,7 @@ export default function GeneratePage() {
               exit={{ opacity: 0 }}
               className="w-full flex flex-col items-center gap-6 mt-4"
             >
-              <div className="w-full h-[360px] rounded-2xl overflow-hidden relative bg-[#0d0e12] border border-neutral-800/60">
+              <div className="w-full h-[360px] rounded-2xl overflow-hidden relative bg-[#171717] border border-neutral-800/60">
                 {previewUrl && (
                   <img src={previewUrl} alt="Processing" className="w-full h-full object-cover opacity-30 blur-sm" />
                 )}
@@ -410,7 +409,7 @@ export default function GeneratePage() {
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60"
+                    className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#161616] shadow-2xl shadow-black/60"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={resultUrl} alt="Generated result" className="w-full h-auto object-cover" />
@@ -448,7 +447,7 @@ export default function GeneratePage() {
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#0c0e12] shadow-2xl shadow-black/60 relative"
+                    className="w-full rounded-2xl overflow-hidden border border-white/[0.06] bg-[#161616] shadow-2xl shadow-black/60 relative"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -563,7 +562,7 @@ export default function GeneratePage() {
                 className={`relative w-full h-[280px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-6 transition-all duration-300 overflow-hidden ${
                   dragActive
                     ? "border-[#e2a85c] bg-[#e2a85c]/5"
-                    : "border-[#4a3b2c] bg-[#0c0e11] hover:border-[#856a42] hover:bg-[#121419]/40"
+                    : "border-[#4a3b2c] bg-[#151515] hover:border-[#856a42] hover:bg-[#1e1e1e]/40"
                 }`}
               >
                 {previewUrl ? (
@@ -598,7 +597,7 @@ export default function GeneratePage() {
                       <p className="text-sm font-sans text-neutral-400 mb-6">or click to select</p>
                       <div className="flex gap-2.5">
                         {["JPG", "JPEG", "PNG"].map((ext) => (
-                          <span key={ext} className="text-[10px] uppercase font-mono tracking-wider font-semibold text-neutral-500 bg-[#121418] border border-neutral-800 px-3 py-1 rounded-md">
+                          <span key={ext} className="text-[10px] uppercase font-mono tracking-wider font-semibold text-neutral-500 bg-[#1d1d1d] border border-neutral-800 px-3 py-1 rounded-md">
                             {ext}
                           </span>
                         ))}
@@ -627,7 +626,7 @@ export default function GeneratePage() {
                       <path d="M21 15l-5-5L5 21" />
                     </svg>
                     Choose a reference image
-                    <span className="text-xs font-normal text-[#e2a85c]/70">(required, pick one)</span>
+                    <span className="text-xs font-normal text-[#e2a85c]/70">(optional)</span>
                   </button>
 
                   {/* Selected reference preview (single) */}
@@ -657,12 +656,12 @@ export default function GeneratePage() {
                 </div>
 
               {/* Describe Your Scene card */}
-              <div className="w-full bg-[#0c0e11] border border-neutral-800 rounded-2xl p-4 mt-6 shadow-2xl">
+              <div className="w-full bg-[#151515] border border-neutral-800 rounded-2xl p-4 mt-6 shadow-2xl">
                 <div className="flex items-start gap-2">
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="E.g. replace the car with a Lamborghini"
+                    placeholder="Describe your image idea"
                     className="flex-1 bg-transparent text-white placeholder-neutral-500 outline-none text-sm py-1 resize-none h-16 font-sans"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -676,17 +675,31 @@ export default function GeneratePage() {
                     disabled={!selectedFile}
                     title={selectedFile ? `Generate — uses ${GENERATION_COST} tokens` : "Upload your photo first"}
                     aria-label="Generate"
-                    className="shrink-0 w-9 h-9 rounded-full bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/25 disabled:cursor-not-allowed text-black flex items-center justify-center transition-all shadow-md cursor-pointer"
+                    className="shrink-0 w-9 h-9 rounded-full bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/25 disabled:cursor-not-allowed text-black flex items-center justify-center transition-all shadow-md cursor-pointer outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 19V5M5 12l7-7 7 7" />
                     </svg>
                   </button>
                 </div>
-                <p className="text-right text-[11px] text-neutral-500 font-mono mt-2">
-                  Generate — {GENERATION_COST} tokens
-                </p>
               </div>
+
+              {/* Main Generate CTA */}
+              <button
+                onClick={handleGenerate}
+                disabled={!selectedFile}
+                className="w-full mt-4 py-3.5 rounded-2xl bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/25 disabled:cursor-not-allowed text-black font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0"
+              >
+                Generate
+                <span className="inline-flex items-center gap-1 bg-black/15 px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="9" fillOpacity="0.35" />
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <text x="12" y="16" textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">$</text>
+                  </svg>
+                  {GENERATION_COST} credits
+                </span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -699,7 +712,7 @@ export default function GeneratePage() {
 
       {/* ── Reference picker (full-screen) ── */}
       {showReferences && (
-        <div className="fixed inset-0 z-50 bg-[#07080b] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex flex-col">
           <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-neutral-900/60 bg-neutral-950/40 backdrop-blur-md">
             <div>
               <h2 className="font-serif text-lg font-semibold text-neutral-200">Choose a reference image</h2>

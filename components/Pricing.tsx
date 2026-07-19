@@ -143,7 +143,7 @@ export default function Pricing() {
             <motion.div
               key={`${plan.name}-${plan.price}`}
               variants={cardVariants}
-              className={`relative rounded-3xl bg-[#0f1115] p-6 sm:p-8 flex flex-col transition-all duration-300 ${plan.highlighted
+              className={`relative rounded-3xl bg-[#1a1a1a] p-6 sm:p-8 flex flex-col transition-all duration-300 ${plan.highlighted
                 ? "border border-indigo-500/80 shadow-[0_0_40px_rgba(99,102,241,0.25)] ring-1 ring-indigo-500/50"
                 : "border border-neutral-900"
                 }`}
@@ -153,7 +153,7 @@ export default function Pricing() {
                 <div
                   className={`absolute -top-3.5 left-1/2 -translate-x-1/2 font-mono text-[9px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border whitespace-nowrap ${plan.highlighted
                     ? "bg-indigo-600 text-white border-indigo-400/40"
-                    : "bg-[#1a1d24] text-neutral-300 border-neutral-700"
+                    : "bg-[#272727] text-neutral-300 border-neutral-700"
                     }`}
                 >
                   {plan.badge}

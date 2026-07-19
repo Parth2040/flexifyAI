@@ -70,7 +70,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-center items-center bg-[#07080b] text-white overflow-hidden px-4">
+    <div className="relative min-h-screen flex flex-col justify-center items-center bg-[#0d0d0d] text-white overflow-hidden px-4">
       {/* Starfield background */}
       <div className="absolute inset-0 pointer-events-none z-0">
         {stars.map((star, idx) => (
@@ -145,7 +145,7 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             type="button"
-            className="w-full flex items-center justify-center bg-[#181a1e] hover:bg-[#202328] border border-neutral-800/80 rounded-xl py-3.5 px-4 text-sm font-semibold transition-all cursor-pointer text-white"
+            className="w-full flex items-center justify-center bg-[#232323] hover:bg-[#2d2d2d] border border-neutral-800/80 rounded-xl py-3.5 px-4 text-sm font-semibold transition-all cursor-pointer text-white"
           >
             {/* Google colored G logo */}
             <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
@@ -186,7 +186,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
-              className="w-full bg-[#121417]/80 hover:bg-[#15181c]/90 border border-neutral-800/80 focus:border-gold/50 rounded-xl px-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all"
+              className="w-full bg-[#1d1d1d]/80 hover:bg-[#212121]/90 border border-neutral-800/80 focus:border-gold/50 rounded-xl px-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all"
             />
           </div>
 
@@ -198,7 +198,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full bg-[#121417]/80 hover:bg-[#15181c]/90 border border-neutral-800/80 focus:border-gold/50 rounded-xl px-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all"
+              className="w-full bg-[#1d1d1d]/80 hover:bg-[#212121]/90 border border-neutral-800/80 focus:border-gold/50 rounded-xl px-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all"
             />
             <a
               href="#"

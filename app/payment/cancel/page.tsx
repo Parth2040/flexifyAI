@@ -9,7 +9,7 @@ export default function PaymentCancelPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#07080b] text-white flex flex-col items-center justify-center px-4 text-center">
+    <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col items-center justify-center px-4 text-center">
       <div className="w-16 h-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 mb-6">
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
