@@ -27,8 +27,8 @@ function pickSize(width: number, height: number): string {
  *
  * Expects multipart/form-data with fields:
  *   - image: the uploaded photo (File)
- *   - prompt: the scene description (string, optional — the master prompt is
- *     always sent; this is appended to it when present)
+ *   - prompt: the scene description (string, required — the master prompt is
+ *     always sent first, with this appended after it)
  */
 export async function POST(request: Request) {
   // 1. Require an authenticated user.
@@ -51,17 +51,17 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const image = form.get("image");
     const userPrompt = (form.get("prompt") as string | null)?.trim();
-    const prompt = [MASTER_PROMPT, userPrompt].filter(Boolean).join("\n\n");
 
     if (!(image instanceof File) || image.size === 0) {
       return NextResponse.json({ error: "Please upload a photo." }, { status: 400 });
     }
-    if (!prompt) {
+    if (!userPrompt) {
       return NextResponse.json(
         { error: "Please describe the scene you want." },
         { status: 400 }
       );
     }
+    const prompt = [MASTER_PROMPT, userPrompt].filter(Boolean).join("\n\n");
 
     // 4. Spend credits FIRST (atomic). If the user can't afford a generation we
     //    never call OpenAI — the client shows a fixed blurred teaser instead.

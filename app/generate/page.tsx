@@ -215,11 +215,12 @@ export default function GeneratePage() {
   };
 
   const handleGenerate = async () => {
-    // Required: your photo and a reference image. The prompt is optional.
+    // All three are required: your photo, a reference image, and a prompt.
     const finalPrompt = prompt.trim();
     const missing: string[] = [];
     if (!selectedFile) missing.push("your photo");
     if (!referenceFile) missing.push("a reference image");
+    if (!finalPrompt) missing.push("a prompt");
     if (!selectedFile || missing.length > 0) {
       setAlertMsg(`Please provide ${missing.join(", ")} before generating.`);
       return;
@@ -661,7 +662,7 @@ export default function GeneratePage() {
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="E.g. replace the car with a Lamborghini (optional)"
+                    placeholder="E.g. replace the car with a Lamborghini"
                     className="flex-1 bg-transparent text-white placeholder-neutral-500 outline-none text-sm py-1 resize-none h-16 font-sans"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -673,7 +674,7 @@ export default function GeneratePage() {
                   <button
                     onClick={handleGenerate}
                     disabled={!selectedFile}
-                    title={selectedFile ? "Generate" : "Upload your photo first"}
+                    title={selectedFile ? `Generate — uses ${GENERATION_COST} tokens` : "Upload your photo first"}
                     aria-label="Generate"
                     className="shrink-0 w-9 h-9 rounded-full bg-[#e2a85c] hover:bg-[#d4994f] active:bg-[#c68b42] disabled:bg-[#e2a85c]/25 disabled:cursor-not-allowed text-black flex items-center justify-center transition-all shadow-md cursor-pointer"
                   >
@@ -682,6 +683,9 @@ export default function GeneratePage() {
                     </svg>
                   </button>
                 </div>
+                <p className="text-right text-[11px] text-neutral-500 font-mono mt-2">
+                  Generate — {GENERATION_COST} tokens
+                </p>
               </div>
             </motion.div>
           )}
